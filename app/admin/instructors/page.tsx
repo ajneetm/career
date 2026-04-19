@@ -57,7 +57,7 @@ export default async function InstructorsAdmin() {
           </thead>
           <tbody>
             {instructors.length > 0 ? (
-              instructors.map((inst) => (
+              instructors.map((inst: { id: string; name: string; email: string; createdAt: Date }) => (
                 <tr key={inst.id} style={{ borderBottom: '1px solid #edf2f7' }}>
                   <td style={{ padding: '15px' }}>{inst.name}</td>
                   <td style={{ padding: '15px' }}>{inst.email}</td>
