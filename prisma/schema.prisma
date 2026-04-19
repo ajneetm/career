@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// جدول المدربين
+model Instructor {
+  id              String     @id @default(cuid())
+  name            String
+  email           String     @unique
+  password        String
+  phone           String?
+  agreementSigned Boolean    @default(true)
+  workshops       Workshop[]
+  createdAt       DateTime   @default(now())
+}
+
+// جدول المناهج
+model Curriculum {
+  id          String     @id @default(cuid())
+  title       String
+  description String
+  contentUrl  String?
+  workshops   Workshop[]
+}
+
+// جدول الورش
+model Workshop {
+  id            String      @id @default(cuid())
+  instructorId  String
+  instructor    Instructor  @relation(fields: [instructorId], references: [id])
+  curriculumId  String
+  curriculum    Curriculum  @relation(fields: [curriculumId], references: [id])
+  startDate     DateTime
+  status        String      @default("UPCOMING")
+  sessions      Session[]
+  enrollments   Enrollment[]
+}
+
+// جدول الجلسات
+model Session {
+  id         String   @id @default(cuid())
+  workshopId String
+  workshop   Workshop @relation(fields: [workshopId], references: [id])
+  topic      String
+  date       DateTime
+  isDone     Boolean  @default(false)
+}
+
+// جدول المتدربين
+model Enrollment {
+  id          String   @id @default(cuid())
+  studentName String
+  workshopId  String
+  workshop    Workshop @relation(fields: [workshopId], references: [id])
+  grade       Float?
+  certificate String?
+}

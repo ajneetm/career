@@ -1,0 +1,16 @@
+[
+  {
+    "id": "sample-1",
+    "titleEn": "Sample workshop",
+    "titleAr": "ورشة تجريبية",
+    "instructor": "Coach Name",
+    "category": "choice",
+    "color": "#fbc02d",
+    "letter": "C",
+    "image": "/Picture1.png",
+    "dayOfWeek": 0,
+    "workshopDate": null,
+    "details": ["First learning outcome.", "Second outcome."],
+    "sortOrder": 0
+  }
+]
