@@ -106,6 +106,8 @@ export function ChoiceAssessmentClient() {
   const [aiReport,  setAiReport]  = useState<{ strengths: string[]; weaknesses: string[]; recommendation: string } | null>(null)
   const [dir,       setDir]       = useState(1)
 
+  const BRAND = '#1e5fdc'   // single colour used throughout question phase
+
   const axis        = AXES[axisIndex]
   const globalIdx   = axisIndex * 4 + qIndex
   const currentAns  = answers[globalIdx]
@@ -113,6 +115,8 @@ export function ChoiceAssessmentClient() {
   const isLastQ     = qIndex === 3
   const axisAnswers = answers.slice(axisIndex * 4, axisIndex * 4 + 4)
   const axisComplete = axisAnswers.every(a => a > 0)
+  const axisFirstQ  = axisIndex * 4 + 1          // e.g. 5
+  const axisLastQ   = axisIndex * 4 + 4           // e.g. 8
 
   const setAnswer = (qi: number, val: number) =>
     setAnswers(prev => { const n = [...prev]; n[axisIndex * 4 + qi] = val; return n })
@@ -227,12 +231,11 @@ export function ChoiceAssessmentClient() {
                   return (
                     <div key={ax.id} className="ca-bar-row">
                       <div className="ca-bar-header">
-                        <span className="ca-bar-dot" style={{ background: ax.color }} />
                         <span className="ca-bar-name">{ax.title}</span>
                         <span className="ca-bar-val" style={{ color: lv.color }}>{axisScores[i]}/20</span>
                       </div>
                       <div className="ca-bar-track">
-                        <motion.div className="ca-bar-fill" style={{ background: ax.color }}
+                        <motion.div className="ca-bar-fill" style={{ background: lv.color }}
                           initial={{ width: 0 }} animate={{ width: `${(axisScores[i] / 20) * 100}%` }} transition={{ duration: 0.7, ease: 'easeOut' }} />
                       </div>
                       <span className="ca-bar-tag" style={{ background: `${lv.color}15`, color: lv.color }}>{lv.label}</span>
@@ -259,18 +262,18 @@ export function ChoiceAssessmentClient() {
               </div>
             )}
             {needAxes.length > 0 && (
-              <div className="ca-report-block" style={{ borderColor: '#0288d130', background: '#0288d106' }}>
-                <p className="ca-report-title" style={{ color: '#0288d1' }}>📈 الاحتياج التطويري حسب المحور</p>
+              <div className="ca-report-block ca-report-neutral">
+                <p className="ca-report-title ca-report-title-neutral">📈 الاحتياج التطويري حسب المحور</p>
                 {needAxes.map(ax => (
-                  <div key={ax.id} className="ca-need-axis" style={{ borderColor: `${ax.color}30` }}>
-                    <p className="ca-need-title" style={{ color: ax.color }}>{ax.title}</p>
+                  <div key={ax.id} className="ca-need-axis">
+                    <p className="ca-need-title">{ax.title}</p>
                     <ul>{AXIS_NEEDS[ax.id].map((n, i) => <li key={i}>{n}</li>)}</ul>
                   </div>
                 ))}
               </div>
             )}
-            <div className="ca-report-block" style={{ borderColor: `${overall.color}30`, background: `${overall.color}08` }}>
-              <p className="ca-report-title" style={{ color: overall.color }}>🎯 التوصية النهائية</p>
+            <div className="ca-report-block ca-report-recommendation">
+              <p className="ca-report-title ca-report-title-rec">🎯 التوصية النهائية</p>
               <p className="ca-recommendation">{recommendation}</p>
             </div>
           </motion.div>
@@ -301,14 +304,16 @@ export function ChoiceAssessmentClient() {
       {/* ══ MOBILE layout — one question at a time (hidden on desktop) ══════ */}
       <div className="ca-mobile-view">
         {/* Top bar */}
-        <div className="ca-topbar" style={{ borderBottom: `3px solid ${axis.color}` }}>
+        <div className="ca-topbar">
           <div className="ca-topbar-inner">
             <div className="ca-progress-track">
-              <div className="ca-progress-fill" style={{ width: `${progressPct}%`, background: axis.color }} />
+              <div className="ca-progress-fill" style={{ width: `${progressPct}%`, background: BRAND }} />
             </div>
             <div className="ca-topbar-meta">
-              <span className="ca-axis-pill-inline" style={{ color: axis.color }}>{axis.title}</span>
-              <span className="ca-progress-label">{globalIdx + 1} / 24</span>
+              <span className="ca-axis-pill-inline">{axis.title}</span>
+              <span className="ca-progress-label" style={{ color: BRAND, fontWeight: 600 }}>
+                السؤال {globalIdx + 1} / 24
+              </span>
             </div>
           </div>
         </div>
@@ -329,7 +334,7 @@ export function ChoiceAssessmentClient() {
         </div>
 
         {/* Big likert */}
-        <LikertRow value={currentAns} color={axis.color} onChange={v => setAnswer(qIndex, v)} />
+        <LikertRow value={currentAns} color={BRAND} onChange={v => setAnswer(qIndex, v)} />
 
         {/* Sticky nav */}
         <div className="ca-bottom-nav">
@@ -338,7 +343,7 @@ export function ChoiceAssessmentClient() {
             : <button onClick={mobilePrev} className="ca-nav-back">← السابق</button>
           }
           <button onClick={mobileNext} disabled={!currentAns} className="ca-nav-next"
-            style={currentAns ? { background: axis.color } : {}}>
+            style={currentAns ? { background: BRAND } : {}}>
             {isLastAxis && isLastQ ? 'عرض النتائج ←' : 'التالي ←'}
           </button>
         </div>
@@ -346,19 +351,25 @@ export function ChoiceAssessmentClient() {
 
       {/* ══ DESKTOP layout — full axis at once (hidden on mobile) ══════════ */}
       <div className="ca-desktop-view">
-        {/* Step dots + axis label */}
+        {/* Step dots + counters */}
         <div className="ca-desktop-header">
           <div className="ca-desktop-header-inner">
             <div className="ca-desktop-steps">
               {AXES.map((ax, i) => (
-                <div key={ax.id} className={`ca-desktop-dot ${i === axisIndex ? 'active' : i < axisIndex ? 'done' : ''}`}
-                  style={{ background: i <= axisIndex ? ax.color : '#e2e8f0' }} title={ax.title} />
+                <div key={ax.id}
+                  className={`ca-desktop-dot ${i === axisIndex ? 'active' : i < axisIndex ? 'done' : ''}`}
+                  title={ax.title} />
               ))}
             </div>
-            <span className="ca-desktop-counter">المحور {axisIndex + 1} من {AXES.length}</span>
+            <div className="ca-desktop-counters">
+              <span className="ca-desktop-counter-main" style={{ color: BRAND }}>
+                الأسئلة {axisFirstQ}–{axisLastQ} من 24
+              </span>
+              <span className="ca-desktop-counter-sub">المحور {axisIndex + 1} / {AXES.length}</span>
+            </div>
           </div>
-          <div className="ca-progress-track" style={{ maxWidth: 760, margin: '8px auto 0', borderRadius: 99 }}>
-            <div className="ca-progress-fill" style={{ width: `${progressPct}%`, background: axis.color, borderRadius: 99 }} />
+          <div className="ca-progress-track ca-progress-desktop">
+            <div className="ca-progress-fill" style={{ width: `${progressPct}%`, background: BRAND }} />
           </div>
         </div>
 
@@ -373,11 +384,11 @@ export function ChoiceAssessmentClient() {
               className="ca-desktop-card"
             >
               {/* Axis header stripe */}
-              <div className="ca-desktop-axis-header" style={{ background: `${axis.color}0e`, borderBottom: `2px solid ${axis.color}22` }}>
-                <div className="ca-desktop-axis-num" style={{ background: axis.color }}>{axisIndex + 1}</div>
+              <div className="ca-desktop-axis-header">
+                <div className="ca-desktop-axis-num" style={{ background: BRAND }}>{axisIndex + 1}</div>
                 <div>
                   <p className="ca-desktop-axis-sub">المحور</p>
-                  <p className="ca-desktop-axis-title" style={{ color: axis.color }}>{axis.title}</p>
+                  <p className="ca-desktop-axis-title">{axis.title}</p>
                 </div>
                 {/* Legend */}
                 <div className="ca-desktop-legend">
@@ -392,10 +403,12 @@ export function ChoiceAssessmentClient() {
                 {axis.questions.map((q, qi) => (
                   <div key={qi} className="ca-desktop-q-row">
                     <p className="ca-desktop-q-text">
-                      <span className="ca-desktop-q-num" style={{ color: axis.color }}>{qi + 1}</span>
+                      <span className="ca-desktop-q-num" style={{ color: BRAND }}>
+                        {axisIndex * 4 + qi + 1}
+                      </span>
                       {q}
                     </p>
-                    <LikertRow value={axisAnswers[qi]} color={axis.color} onChange={v => setAnswer(qi, v)} compact />
+                    <LikertRow value={axisAnswers[qi]} color={BRAND} onChange={v => setAnswer(qi, v)} compact />
                   </div>
                 ))}
               </div>
@@ -407,7 +420,7 @@ export function ChoiceAssessmentClient() {
                   : <button onClick={desktopPrev} className="ca-btn-outline">← السابق</button>
                 }
                 <button onClick={desktopNext} disabled={!axisComplete} className="ca-btn-primary"
-                  style={axisComplete ? { background: axis.color } : {}}>
+                  style={axisComplete ? { background: BRAND } : {}}>
                   {isLastAxis ? 'عرض النتائج ←' : 'التالي ←'}
                 </button>
               </div>
