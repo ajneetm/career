@@ -60,3 +60,29 @@ model Enrollment {
   grade       Float?
   certificate String?
 }
+
+// ─── Career Assessment ────────────────────────────────────────────────────────
+model Assessment {
+  id              String   @id @default(cuid())
+  firstName       String?
+  lastName        String?
+  email           String?
+  phone           String?
+  age             Int
+  yearsExperience Int
+  position        String
+  // 21 answers stored as JSON array of integers [1-5]
+  answers         Json
+  // Computed stage scores (0-100)
+  scoreChoice     Float
+  scoreAdapt      Float
+  scoreRole       Float
+  scoreEffective  Float
+  scoreEsteem     Float
+  scoreRetire     Float
+  overallScore    Float
+  currentStage    String
+  aiAnalysis      String?  @db.Text
+  language        String   @default("ar")
+  createdAt       DateTime @default(now())
+}

@@ -1,4 +1,5 @@
 import './globals.css';
+import './assessment.css';
 import Navbar from '../components/Navbar';
 import { I18nProvider } from '@/lib/i18n/I18nProvider';
 
