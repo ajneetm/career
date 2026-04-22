@@ -2,21 +2,29 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { STAGES } from '@/lib/assessment'
 
+const MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash']
+
 async function callGemini(prompt: string): Promise<string> {
   const key = process.env.GEMINI_API_KEY
   if (!key) throw new Error('GEMINI_API_KEY is not set')
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 2000, temperature: 0.5, responseMimeType: 'application/json' },
-    }),
-  })
-  const json = await res.json()
-  if (json.error) throw new Error(`Gemini error: ${json.error.message}`)
-  return json.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+
+  let lastError = ''
+  for (const model of MODELS) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 2000, temperature: 0.5, responseMimeType: 'application/json' },
+      }),
+    })
+    const json = await res.json()
+    if (json.error) { lastError = json.error.message; continue }
+    const text = json.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+    if (text) return text
+  }
+  throw new Error(`Gemini error: ${lastError}`)
 }
 
 export async function POST(req: NextRequest) {
