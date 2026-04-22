@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { STAGES } from '@/lib/assessment'
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY!
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`
-
 async function callGemini(prompt: string): Promise<string> {
-  const res = await fetch(GEMINI_URL, {
+  const key = process.env.GEMINI_API_KEY
+  if (!key) throw new Error('GEMINI_API_KEY is not set')
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -15,6 +15,7 @@ async function callGemini(prompt: string): Promise<string> {
     }),
   })
   const json = await res.json()
+  if (json.error) throw new Error(`Gemini error: ${json.error.message}`)
   return json.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
 }
 
