@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { getCareerStage } from '@/lib/career-stages';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 
@@ -64,15 +65,35 @@ export function CareerStageClient({ stageId }: { stageId: string }) {
         </div>
 
         <div style={{ marginTop: '40px', display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+          {stageId === 'choice' && (
+            <Link
+              href="/assessment/choice"
+              className="submit-btn"
+              style={{
+                width: 'auto',
+                padding: '15px 35px',
+                fontWeight: 400,
+                background: current.color,
+                border: 'none',
+                color: 'white',
+                cursor: 'pointer',
+                textDecoration: 'none',
+                display: 'inline-block',
+              }}
+            >
+              {labels.takeAssessment}
+            </Link>
+          )}
+
           <button
             className="submit-btn"
             style={{
               width: 'auto',
               padding: '15px 35px',
               fontWeight: 400,
-              background: current.color,
-              border: 'none',
-              color: 'white',
+              background: stageId === 'choice' ? 'transparent' : current.color,
+              color: stageId === 'choice' ? '#475569' : 'white',
+              border: stageId === 'choice' ? `2px solid ${current.color}` : 'none',
               cursor: 'pointer',
             }}
           >

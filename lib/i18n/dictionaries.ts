@@ -35,6 +35,7 @@ export const dictionaries: Record<
       notFoundBody: string;
       joinWorkshop: string;
       bookConsultation: string;
+      takeAssessment: string;
       footerLine1: string;
       footerLine2: string;
     };
@@ -116,6 +117,7 @@ export const dictionaries: Record<
       notFoundBody: 'The requested career stage does not exist.',
       joinWorkshop: 'Join Workshop',
       bookConsultation: 'Book a Consultation',
+      takeAssessment: 'Take the Readiness Assessment',
       footerLine1: 'Identify your stage now… and take the next step with awareness.',
       footerLine2: 'Career Path Workshop | Individual Consultation',
     },
@@ -193,6 +195,7 @@ export const dictionaries: Record<
       notFoundBody: 'مرحلة المسار المطلوبة غير متوفرة.',
       joinWorkshop: 'انضم للورشة',
       bookConsultation: 'احجز استشارة',
+      takeAssessment: 'ابدأ استبيان الجاهزية',
       footerLine1: 'حدّد مرحلتك الآن… واتخذ خطوتك التالية بوعي.',
       footerLine2: 'ورشة المسار المهني | استشارة فردية',
     },

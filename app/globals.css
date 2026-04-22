@@ -1,14 +1,12 @@
-/* Montserrat Arabic Fonts - تأكد من وجود الملفات في public/fonts */
-@font-face {
-    font-family: 'MontserratArabic';
-    src: url('/fonts/ArbFONTS-Montserrat-Arabic-Regular.ttf') format('truetype');
-    font-weight: 400;
-}
-@font-face {
-    font-family: 'MontserratArabic';
-    src: url('/fonts/ArbFONTS-Montserrat-Arabic-Black.ttf') format('truetype');
-    font-weight: 900;
-}
+@font-face { font-family: 'MontserratArabic'; src: url('/fonts/ArbFONTS-Montserrat-Arabic-Thin.ttf') format('truetype'); font-weight: 100; font-display: swap; }
+@font-face { font-family: 'MontserratArabic'; src: url('/fonts/ArbFONTS-Montserrat-Arabic-ExtraLight.ttf') format('truetype'); font-weight: 200; font-display: swap; }
+@font-face { font-family: 'MontserratArabic'; src: url('/fonts/ArbFONTS-Montserrat-Arabic-Light.ttf') format('truetype'); font-weight: 300; font-display: swap; }
+@font-face { font-family: 'MontserratArabic'; src: url('/fonts/ArbFONTS-Montserrat-Arabic-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'MontserratArabic'; src: url('/fonts/ArbFONTS-Montserrat-Arabic-Medium.ttf') format('truetype'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'MontserratArabic'; src: url('/fonts/ArbFONTS-Montserrat-Arabic-SemiBold.ttf') format('truetype'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'MontserratArabic'; src: url('/fonts/ArbFONTS-Montserrat-Arabic-Bold.ttf') format('truetype'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'MontserratArabic'; src: url('/fonts/ArbFONTS-Montserrat-Arabic-ExtraBold.ttf') format('truetype'); font-weight: 800; font-display: swap; }
+@font-face { font-family: 'MontserratArabic'; src: url('/fonts/ArbFONTS-Montserrat-Arabic-Black.ttf') format('truetype'); font-weight: 900; font-display: swap; }
 
 :root {
     --yellow: #fbc02d; --orange: #f57c00; --red: #d32f2f;
@@ -33,7 +31,7 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
 .hamburger { cursor: pointer; display: flex; flex-direction: column; gap: 5px; width: 45px; }
 .hamburger span { display: block; width: 28px; height: 3px; background: var(--text-dark); border-radius: 3px; }
 
-.nav-spacer { height: 100px; }
+.nav-spacer { height: 72px; }
 
 /* Sidebar — inset-inline يجعل الانزلاق من جهة البداية (يمين في RTL، يسار في LTR) */
 .sidebar {
@@ -74,7 +72,7 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
 .page-fill {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 100px);
+    height: calc(100vh - 72px);
     overflow: hidden;
 }
 
@@ -417,7 +415,7 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
 .card-retire .card-letter { color: var(--dark-blue); }
 
 /* Detail Pages */
-.detail-wrapper { padding: 120px 8% 60px; max-width: 1000px; margin: 0 auto; text-align: center; }
+.detail-wrapper { padding: 32px 8% 60px; max-width: 1000px; margin: 0 auto; text-align: center; }
 .box { background: #fdfdfd; padding: 45px; border-radius: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.04); text-align: start; border-top: 15px solid var(--text-dark); }
 
 .submit-btn { width: 100%; padding: 16px; background: var(--text-dark); color: white; border: none; border-radius: 50px; font-weight: 400; cursor: pointer; transition: 0.3s; }

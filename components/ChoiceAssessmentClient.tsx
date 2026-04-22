@@ -1,12 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 
 // ─── Radar Chart ─────────────────────────────────────────────────────────────
 function RadarChart({ scores, labels, colors }: { scores: number[]; labels: string[]; colors: string[] }) {
-  const size = 280, cx = size / 2, cy = size / 2, radius = 100, n = scores.length
+  const size = 260, cx = size / 2, cy = size / 2, radius = 90, n = scores.length
   const angle = (i: number) => (Math.PI * 2 * i) / n - Math.PI / 2
   const point = (r: number, i: number) => ({ x: cx + r * Math.cos(angle(i)), y: cy + r * Math.sin(angle(i)) })
   const dataPoints = scores.map((s, i) => point((s / 100) * radius, i))
@@ -31,8 +31,8 @@ function RadarChart({ scores, labels, colors }: { scores: number[]; labels: stri
         const ps = point((scores[i] / 100) * radius, i)
         return (
           <g key={i}>
-            <text x={ps.x} y={ps.y - 9} textAnchor="middle" fontSize="9" fontWeight="700" fill={colors[i]}>{scores[i]}%</text>
-            <text x={p.x} y={p.y} textAnchor="middle" dominantBaseline="central" fontSize="10" fontWeight="600" fill="#1e293b">{labels[i]}</text>
+            <text x={ps.x} y={ps.y - 9} textAnchor="middle" fontSize="9" fontWeight="600" fill={colors[i]}>{scores[i]}%</text>
+            <text x={p.x} y={p.y} textAnchor="middle" dominantBaseline="central" fontSize="10" fontWeight="500" fill="#1e293b">{labels[i]}</text>
           </g>
         )
       })}
@@ -40,460 +40,290 @@ function RadarChart({ scores, labels, colors }: { scores: number[]; labels: stri
   )
 }
 
-// ─── Data ────────────────────────────────────────────────────────────────────
+// ─── Data ─────────────────────────────────────────────────────────────────────
 
 const AXIS_NEEDS: Record<string, string[]> = {
-  direction: [
-    'اختبارات ميول مهنية',
-    'جلسة إرشاد مهني متخصصة',
-    'مقارنة 3 مجالات مهنية مختلفة',
-    'كتابة سبب الاختيار بشكل صريح',
-  ],
-  knowledge: [
-    'جمع معلومات واقعية عن المهنة المستهدفة',
-    'مقابلة أشخاص من المجال للتعرف على الواقع',
-    'قراءة وصف الوظائف ومتطلباتها',
-    'التعرف على المؤهلات والشهادات المطلوبة',
-  ],
-  decision: [
-    'استخدام نموذج مفاضلة منطقي بين الخيارات',
-    'ترتيب الأولويات وفق المعطيات الحقيقية',
-    'تقليل التأثر بالضغط الخارجي',
-    'بناء بدائل واضحة في حال تغيّر الظروف',
-  ],
-  skills: [
-    'وضع خطة لاكتساب مهارة أساسية في المجال',
-    'الالتحاق بتدريب قصير أو دورة عملية',
-    'اعتماد خطة تعلم ذاتي منظمة',
-    'ممارسة عملية في البيئة المهنية المستهدفة',
-  ],
-  social: [
-    'إيجاد مرشد مهني أو شخص خبير في المجال',
-    'بناء بيئة داععة ومشجعة للقرار المهني',
-    'توسيع شبكة العلاقات في التخصص المنشود',
-    'تطوير مهارة طلب المساندة بوضوح وثقة',
-  ],
-  execution: [
-    'وضع خطة 90 يوم بخطوات قابلة للتنفيذ',
-    'تحديد ميزانية أولية واقعية للتأهيل',
-    'تحويل الأهداف إلى مؤشرات قابلة للقياس',
-    'تجربة المجال فعليًا قبل القرار النهائي',
-  ],
+  direction: ['اختبارات ميول مهنية', 'جلسة إرشاد مهني متخصصة', 'مقارنة 3 مجالات مهنية مختلفة', 'كتابة سبب الاختيار بشكل صريح'],
+  knowledge: ['جمع معلومات واقعية عن المهنة المستهدفة', 'مقابلة أشخاص من المجال للتعرف على الواقع', 'قراءة وصف الوظائف ومتطلباتها', 'التعرف على المؤهلات والشهادات المطلوبة'],
+  decision:  ['استخدام نموذج مفاضلة منطقي بين الخيارات', 'ترتيب الأولويات وفق المعطيات الحقيقية', 'تقليل التأثر بالضغط الخارجي', 'بناء بدائل واضحة في حال تغيّر الظروف'],
+  skills:    ['وضع خطة لاكتساب مهارة أساسية في المجال', 'الالتحاق بتدريب قصير أو دورة عملية', 'اعتماد خطة تعلم ذاتي منظمة', 'ممارسة عملية في البيئة المهنية المستهدفة'],
+  social:    ['إيجاد مرشد مهني أو شخص خبير في المجال', 'بناء بيئة داعمة ومشجعة للقرار المهني', 'توسيع شبكة العلاقات في التخصص المنشود', 'تطوير مهارة طلب المساندة بوضوح وثقة'],
+  execution: ['وضع خطة 90 يوم بخطوات قابلة للتنفيذ', 'تحديد ميزانية أولية واقعية للتأهيل', 'تحويل الأهداف إلى مؤشرات قابلة للقياس', 'تجربة المجال فعليًا قبل القرار النهائي'],
 }
 
 const AXES = [
-  {
-    id: 'direction',
-    title: 'وضوح الاتجاه المهني',
-    color: '#1e5fdc',
-    questions: [
-      'لدي تصور واضح للمهنة أو المجال الذي أميل إليه.',
-      'أستطيع أن أشرح بوضوح لماذا اخترت هذا المجال.',
-      'أميز بين ما أريده أنا فعلًا وبين ما يريده الآخرون لي.',
-      'أعرف ما الذي يناسب شخصيتي وقدراتي، وليس فقط ما يعجبني مؤقتًا.',
-    ],
-  },
-  {
-    id: 'knowledge',
-    title: 'المعرفة المهنية',
-    color: '#0288d1',
-    questions: [
-      'أعرف التخصصات أو المسارات الدراسية التي تقود إلى المهنة التي أفكر فيها.',
-      'لدي معلومات واقعية عن طبيعة العمل اليومي في هذا المجال.',
-      'أعرف المؤهلات والمهارات المطلوبة للدخول إلى هذا المجال.',
-      'لدي معرفة مقبولة بمستقبل هذا المجال وفرصه وتحدياته.',
-    ],
-  },
-  {
-    id: 'decision',
-    title: 'اتخاذ القرار وتقليل التشتت',
-    color: '#7c3aed',
-    questions: [
-      'أستطيع المقارنة بين أكثر من خيار مهني بطريقة منطقية.',
-      'لا أتغير بسرعة بسبب كلام الناس أو ضغط الأسرة.',
-      'أعتمد على معلومات وحقائق عند الاختيار أكثر من الانطباع أو التقليد.',
-      'أملك بدائل واضحة إذا لم ينجح خياري الأول.',
-    ],
-  },
-  {
-    id: 'skills',
-    title: 'الجاهزية المهارية',
-    color: '#388e3c',
-    questions: [
-      'أمتلك مهارة أساسية تخدمني في المجال الذي أفكر فيه.',
-      'أستطيع تنظيم وقتي للتعلم والتطوير.',
-      'أبادر للبحث عن تدريب أو تطوع أو تجربة عملية.',
-      'أستطيع التواصل وطرح الأسئلة والاستفادة من المرشدين أو المختصين.',
-    ],
-  },
-  {
-    id: 'social',
-    title: 'الدعم الاجتماعي والإرشادي',
-    color: '#f57c00',
-    questions: [
-      'يوجد في حياتي شخص واحد على الأقل يمكنه أن يوجّهني مهنيًا.',
-      'أستطيع بناء علاقات إيجابية مع أشخاص في المجال الذي أطمح إليه.',
-      'لا أتردد في طلب المشورة أو الاستفادة من خبرات الآخرين.',
-      'أستطيع التعامل مع الضغوط الاجتماعية دون أن أفقد اتجاهي.',
-    ],
-  },
-  {
-    id: 'execution',
-    title: 'الجاهزية التنفيذية والمالية',
-    color: '#c62828',
-    questions: [
-      'لدي خطة أولية للخطوات التي سأقوم بها خلال الأشهر الستة القادمة.',
-      'لدي تصور واقعي لتكاليف الدراسة أو التدريب أو التأهيل المطلوب.',
-      'أستطيع الالتزام بخطة تطوير بسيطة وقابلة للقياس.',
-      'أنا مستعد لتجربة المجال فعليًا قبل اتخاذ القرار النهائي.',
-    ],
-  },
+  { id: 'direction', title: 'وضوح الاتجاه المهني',          color: '#1e5fdc', questions: ['لدي تصور واضح للمهنة أو المجال الذي أميل إليه.', 'أستطيع أن أشرح بوضوح لماذا اخترت هذا المجال.', 'أميز بين ما أريده أنا فعلًا وبين ما يريده الآخرون لي.', 'أعرف ما الذي يناسب شخصيتي وقدراتي، وليس فقط ما يعجبني مؤقتًا.'] },
+  { id: 'knowledge', title: 'المعرفة المهنية',               color: '#0288d1', questions: ['أعرف التخصصات أو المسارات الدراسية التي تقود إلى المهنة التي أفكر فيها.', 'لدي معلومات واقعية عن طبيعة العمل اليومي في هذا المجال.', 'أعرف المؤهلات والمهارات المطلوبة للدخول إلى هذا المجال.', 'لدي معرفة مقبولة بمستقبل هذا المجال وفرصه وتحدياته.'] },
+  { id: 'decision',  title: 'اتخاذ القرار وتقليل التشتت',   color: '#7c3aed', questions: ['أستطيع المقارنة بين أكثر من خيار مهني بطريقة منطقية.', 'لا أتغير بسرعة بسبب كلام الناس أو ضغط الأسرة.', 'أعتمد على معلومات وحقائق عند الاختيار أكثر من الانطباع أو التقليد.', 'أملك بدائل واضحة إذا لم ينجح خياري الأول.'] },
+  { id: 'skills',    title: 'الجاهزية المهارية',             color: '#388e3c', questions: ['أمتلك مهارة أساسية تخدمني في المجال الذي أفكر فيه.', 'أستطيع تنظيم وقتي للتعلم والتطوير.', 'أبادر للبحث عن تدريب أو تطوع أو تجربة عملية.', 'أستطيع التواصل وطرح الأسئلة والاستفادة من المرشدين أو المختصين.'] },
+  { id: 'social',    title: 'الدعم الاجتماعي والإرشادي',    color: '#f57c00', questions: ['يوجد في حياتي شخص واحد على الأقل يمكنه أن يوجّهني مهنيًا.', 'أستطيع بناء علاقات إيجابية مع أشخاص في المجال الذي أطمح إليه.', 'لا أتردد في طلب المشورة أو الاستفادة من خبرات الآخرين.', 'أستطيع التعامل مع الضغوط الاجتماعية دون أن أفقد اتجاهي.'] },
+  { id: 'execution', title: 'الجاهزية التنفيذية والمالية',  color: '#c62828', questions: ['لدي خطة أولية للخطوات التي سأقوم بها خلال الأشهر الستة القادمة.', 'لدي تصور واقعي لتكاليف الدراسة أو التدريب أو التأهيل المطلوب.', 'أستطيع الالتزام بخطة تطوير بسيطة وقابلة للقياس.', 'أنا مستعد لتجربة المجال فعليًا قبل اتخاذ القرار النهائي.'] },
 ]
 
-const LABELS = ['لا تنطبق أبدًا', 'تنطبق قليلًا', 'تنطبق بدرجة متوسطة', 'تنطبق بدرجة كبيرة', 'تنطبق تمامًا']
+const LABELS = ['لا تنطبق', 'تنطبق قليلًا', 'متوسطة', 'بدرجة كبيرة', 'تنطبق تمامًا']
 
-// ─── Scoring helpers ──────────────────────────────────────────────────────────
-
-function axisLevel(score: number): { label: string; color: string } {
+function axisLevel(score: number) {
   if (score >= 16) return { label: 'قوة واضحة', color: '#388e3c' }
-  if (score >= 11) return { label: 'مستوى جيد — يحتاج دعم', color: '#0288d1' }
+  if (score >= 11) return { label: 'جيد — يحتاج دعم', color: '#0288d1' }
   if (score >= 6)  return { label: 'فجوة تحتاج تدخل', color: '#f57c00' }
-  return { label: 'ضعف حرج — أولوية عاجلة', color: '#c62828' }
+  return { label: 'ضعف حرج', color: '#c62828' }
 }
 
-function overallLevel(total: number): { label: string; desc: string; color: string } {
-  if (total >= 96) return { label: 'جاهزية عالية', desc: 'أنت مستعد لمرحلة الاختيار بمستوى عالٍ من الوضوح والجاهزية.', color: '#388e3c' }
-  if (total >= 72) return { label: 'جاهزية متوسطة', desc: 'تحتاج إلى ضبط بعض المحاور وتوجيه مركّز.', color: '#0288d1' }
-  if (total >= 48) return { label: 'جاهزية ناقصة', desc: 'الشخص متردد أو غير مكتمل الاستعداد — يحتاج دعم في عدة محاور.', color: '#f57c00' }
-  return { label: 'تحتاج بناء أساس', desc: 'هناك حاجة لإعادة بناء الأساس المهني والمعرفي والمهاري.', color: '#c62828' }
-}
-
-interface AxisReport { axis: typeof AXES[0]; score: number; needs: string[] }
-
-function buildReport(answers: number[]) {
-  const axisScores = AXES.map((_, ai) =>
-    answers.slice(ai * 4, ai * 4 + 4).reduce((s, v) => s + v, 0)
-  )
-
-  const strengths: string[] = []
-  const weaknesses: string[] = []
-  const weakAxes: AxisReport[] = []
-
-  axisScores.forEach((score, i) => {
-    const axis = AXES[i]
-    if (score >= 16) {
-      strengths.push(`لديك قوة واضحة في محور "${axis.title}"`)
-    } else if (score >= 11) {
-      strengths.push(`لديك مستوى جيد في "${axis.title}" مع إمكانية تطوير`)
-    } else {
-      const label = score >= 6 ? `فجوة في محور "${axis.title}" تحتاج تدخل` : `ضعف حرج في "${axis.title}" — أولوية عاجلة`
-      weaknesses.push(label)
-      weakAxes.push({ axis, score, needs: AXIS_NEEDS[axis.id] })
-    }
-  })
-
-  const total = axisScores.reduce((s, v) => s + v, 0)
-  const recommendation = total >= 96
-    ? 'لديك استعداد ممتاز لمرحلة الاختيار. ركّز الآن على ترجمة وضوحك إلى خطوات تنفيذية محددة.'
-    : total >= 72
-    ? 'لديك استعداد جيد، لكنك تحتاج إلى تقوية بعض المحاور وتقليل التشتت وربط ميولك بخطوات عملية خلال 3 أشهر.'
-    : total >= 48
-    ? 'أنت في مرحلة تردد — ابدأ بتحديد المحاور الضعيفة وركّز عليها عمليًا قبل اتخاذ أي قرار كبير.'
-    : 'تحتاج إلى إعادة بناء الأساس المهني والمعرفي. ابدأ بجلسة إرشاد مهني متخصصة كأولوية قصوى.'
-
-  return { strengths, weaknesses, weakAxes, recommendation }
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function ScoreBar({ score, max, color }: { score: number; max: number; color: string }) {
-  return (
-    <div style={{ background: '#f1f5f9', borderRadius: 6, height: 10, overflow: 'hidden', flex: 1 }}>
-      <motion.div
-        initial={{ width: 0 }}
-        animate={{ width: `${(score / max) * 100}%` }}
-        transition={{ duration: 0.7, ease: 'easeOut' }}
-        style={{ height: '100%', background: color, borderRadius: 6 }}
-      />
-    </div>
-  )
+function overallLevel(total: number) {
+  if (total >= 96) return { label: 'جاهزية عالية',    desc: 'أنت مستعد لمرحلة الاختيار بمستوى عالٍ من الوضوح والجاهزية.', color: '#388e3c' }
+  if (total >= 72) return { label: 'جاهزية متوسطة',   desc: 'تحتاج إلى ضبط بعض المحاور وتوجيه مركّز.', color: '#0288d1' }
+  if (total >= 48) return { label: 'جاهزية ناقصة',    desc: 'الشخص متردد أو غير مكتمل الاستعداد — يحتاج دعم في عدة محاور.', color: '#f57c00' }
+  return             { label: 'تحتاج بناء أساس',       desc: 'هناك حاجة لإعادة بناء الأساس المهني والمعرفي والمهاري.', color: '#c62828' }
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export function ChoiceAssessmentClient() {
-  const totalQuestions = AXES.length * 4
-  const [answers, setAnswers] = useState<number[]>(Array(totalQuestions).fill(0))
-  const [step, setStep] = useState<'questions' | 'loading' | 'results'>('questions')
-  const [aiReport, setAiReport] = useState<{ strengths: string[]; weaknesses: string[]; recommendation: string } | null>(null)
-  const [error, setError] = useState('')
+  const [axisIndex, setAxisIndex]   = useState(0)
+  const [qIndex,    setQIndex]      = useState(0)   // question within axis: 0-3
+  const [answers,   setAnswers]     = useState<number[]>(Array(24).fill(0))
+  const [step,      setStep]        = useState<'questions' | 'loading' | 'results'>('questions')
+  const [aiReport,  setAiReport]    = useState<{ strengths: string[]; weaknesses: string[]; recommendation: string } | null>(null)
+  const [dir,       setDir]         = useState(1)
 
-  const answered = answers.filter(a => a > 0).length
-  const progress = (answered / totalQuestions) * 100
+  const axis        = AXES[axisIndex]
+  const globalIdx   = axisIndex * 4 + qIndex
+  const currentAns  = answers[globalIdx]
+  const isLastAxis  = axisIndex === AXES.length - 1
+  const isLastQ     = qIndex === 3
+
+  const setAnswer = (val: number) => {
+    setAnswers(prev => { const n = [...prev]; n[globalIdx] = val; return n })
+  }
+
+  const goNext = () => {
+    setDir(1)
+    if (!isLastQ) { setQIndex(q => q + 1); return }
+    if (!isLastAxis) { setAxisIndex(a => a + 1); setQIndex(0); return }
+    handleSubmit()
+  }
+
+  const goPrev = () => {
+    setDir(-1)
+    if (qIndex > 0) { setQIndex(q => q - 1); return }
+    if (axisIndex > 0) { setAxisIndex(a => a - 1); setQIndex(3); return }
+  }
 
   const handleSubmit = async () => {
-    const first = answers.findIndex(a => a === 0)
-    if (first !== -1) {
-      setError(`يرجى الإجابة على السؤال ${first + 1}`)
-      document.getElementById(`cq-${first}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      return
-    }
-    setError('')
     setStep('loading')
     window.scrollTo({ top: 0, behavior: 'smooth' })
-
     try {
-      const axisScores = AXES.map((axis, ai) => ({
-        title: axis.title,
+      const axisScores = AXES.map((_, ai) => ({
+        title: AXES[ai].title,
         score: answers.slice(ai * 4, ai * 4 + 4).reduce((s, v) => s + v, 0),
       }))
       const total = axisScores.reduce((s, a) => s + a.score, 0)
-
       const res = await fetch('/api/assessment/choice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ axisScores, total }),
       })
       const json = await res.json()
-      if (json.error) throw new Error(json.error)
-      setAiReport(json.report)
-    } catch (e: any) {
-      // fallback to static report on AI failure
-      setAiReport(null)
-    }
+      if (!json.error) setAiReport(json.report)
+    } catch { /* fallback to static */ }
     setStep('results')
   }
 
-  // ── Loading screen ────────────────────────────────────────────────────────
+  const totalAnswered = axisIndex * 4 + qIndex
+  const totalQ = 24
+  const progress = Math.round((totalAnswered / totalQ) * 100)
+
+  // ── Loading ───────────────────────────────────────────────────────────────
   if (step === 'loading') {
     return (
-      <div className="assessment-page" dir="rtl">
-        <div className="assessment-header">
-          <div className="assessment-header-inner">
-            <div><h1>استبيان مرحلة الاختيار</h1></div>
-          </div>
-        </div>
-        <div className="assessment-content">
-          <div className="submitting-screen">
-            <div className="spinner" />
-            <p>الذكاء الاصطناعي يحلل نتائجك ويكتب تقريرك المخصص...</p>
-            <p className="submitting-sub">بضع ثوانٍ فقط</p>
-          </div>
+      <div className="ca-page" dir="rtl">
+        <div className="ca-loading">
+          <div className="ca-spinner" />
+          <p>الذكاء الاصطناعي يحلل نتائجك...</p>
+          <span>بضع ثوانٍ فقط</span>
         </div>
       </div>
     )
   }
 
-  // ── Results view ──────────────────────────────────────────────────────────
+  // ── Results ───────────────────────────────────────────────────────────────
   if (step === 'results') {
-    const axisScores = AXES.map((_, ai) =>
-      answers.slice(ai * 4, ai * 4 + 4).reduce((s, v) => s + v, 0)
-    )
-    const total = axisScores.reduce((s, v) => s + v, 0)
-    const overall = overallLevel(total)
-    const staticReport = buildReport(answers)
-    const report = {
-      strengths: aiReport?.strengths ?? staticReport.strengths,
-      weaknesses: aiReport?.weaknesses ?? staticReport.weaknesses,
-      recommendation: aiReport?.recommendation ?? staticReport.recommendation,
-    }
-    // Axes that need development (score < 16)
-    const needAxes = AXES.filter((_, i) => axisScores[i] < 16)
+    const axisScores  = AXES.map((_, ai) => answers.slice(ai * 4, ai * 4 + 4).reduce((s, v) => s + v, 0))
+    const total       = axisScores.reduce((s, v) => s + v, 0)
+    const overall     = overallLevel(total)
+    const needAxes    = AXES.filter((_, i) => axisScores[i] < 16)
     const radarScores = axisScores.map(s => Math.round((s / 20) * 100))
+    const strengths   = aiReport?.strengths   ?? AXES.filter((_, i) => axisScores[i] >= 16).map(a => `قوة واضحة في محور "${a.title}"`)
+    const weaknesses  = aiReport?.weaknesses  ?? AXES.filter((_, i) => axisScores[i] <  16).map(a => `${axisLevel(axisScores[AXES.indexOf(a)]).label} في محور "${a.title}"`)
+    const recommendation = aiReport?.recommendation ?? 'راجع محاور الضعف وابدأ بالخطوات العملية المقترحة.'
 
     return (
-      <div className="result-page" dir="rtl">
-        <div className="result-header" style={{ borderBottom: `4px solid ${overall.color}` }}>
-          <div className="result-header-inner">
+      <div className="ca-page" dir="rtl">
+        <div className="ca-header" style={{ borderBottom: `4px solid ${overall.color}` }}>
+          <div className="ca-header-inner">
             <div>
-              <p className="result-label">نتائج استبيان مرحلة الاختيار</p>
-              <h1>تقرير الجاهزية المهنية</h1>
+              <p className="ca-header-label">استبيان مرحلة الاختيار</p>
+              <h1>نتائجك</h1>
             </div>
-            <div className="overall-circle" style={{ borderColor: overall.color }}>
-              <span style={{ color: overall.color, fontSize: '1.6rem' }}>{total}</span>
-              <small>من 120</small>
+            <div className="ca-score-circle" style={{ borderColor: overall.color }}>
+              <span style={{ color: overall.color }}>{total}</span>
+              <small>/ 120</small>
             </div>
           </div>
         </div>
 
-        <div className="result-content">
-
-          {/* Overall level */}
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-            className="stage-badge" style={{ borderColor: overall.color, background: `${overall.color}10` }}>
-            <div className="stage-letter" style={{ background: overall.color, fontSize: '1rem', minWidth: 40, height: 40 }}>
-              {total}
-            </div>
+        <div className="ca-results-content">
+          <motion.div className="ca-overall-badge" style={{ borderColor: overall.color, background: `${overall.color}08` }}
+            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+            <div className="ca-overall-dot" style={{ background: overall.color }} />
             <div>
-              <p className="stage-badge-label">مستوى الجاهزية الكلية</p>
-              <p className="stage-badge-title" style={{ color: overall.color }}>{overall.label}</p>
-              <p style={{ fontSize: '0.82rem', color: '#64748b', marginTop: 4 }}>{overall.desc}</p>
+              <p className="ca-badge-sub">مستوى الجاهزية الكلية</p>
+              <p className="ca-badge-title" style={{ color: overall.color }}>{overall.label}</p>
+              <p className="ca-badge-desc">{overall.desc}</p>
             </div>
           </motion.div>
 
-          {/* Radar + Axes scores */}
-          <div className="result-grid">
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
-            className="result-card radar-card">
-            <h2>الرادار المهني</h2>
-            <div className="radar-wrap">
-              <RadarChart
-                scores={radarScores}
-                labels={AXES.map(a => a.title.split(' ')[0])}
-                colors={AXES.map(a => a.color)}
-              />
-            </div>
-          </motion.div>
+          <div className="ca-grid">
+            <motion.div className="ca-card" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+              <h2>الرادار المهني</h2>
+              <div className="ca-radar-wrap">
+                <RadarChart scores={radarScores} labels={AXES.map(a => a.title.split(' ')[0])} colors={AXES.map(a => a.color)} />
+              </div>
+            </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-            className="result-card scores-card" style={{ marginBottom: 0 }}>
-            <h2 style={{ marginBottom: 20 }}>النتائج حسب المحاور</h2>
-            <div className="scores-list">
-              {AXES.map((axis, i) => {
-                const score = axisScores[i]
-                const level = axisLevel(score)
-                return (
-                  <div key={axis.id} className="score-row">
-                    <div className="score-row-header">
-                      <div className="score-dot" style={{ background: axis.color }} />
-                      <span className="score-name">{axis.title}</span>
-                      <span className="score-val" style={{ color: level.color }}>{score} / 20</span>
+            <motion.div className="ca-card" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}>
+              <h2>النتائج حسب المحاور</h2>
+              <div className="ca-bars">
+                {AXES.map((ax, i) => {
+                  const lv = axisLevel(axisScores[i])
+                  return (
+                    <div key={ax.id} className="ca-bar-row">
+                      <div className="ca-bar-header">
+                        <span className="ca-bar-dot" style={{ background: ax.color }} />
+                        <span className="ca-bar-name">{ax.title}</span>
+                        <span className="ca-bar-val" style={{ color: lv.color }}>{axisScores[i]}/20</span>
+                      </div>
+                      <div className="ca-bar-track">
+                        <motion.div className="ca-bar-fill" style={{ background: ax.color }}
+                          initial={{ width: 0 }} animate={{ width: `${(axisScores[i] / 20) * 100}%` }} transition={{ duration: 0.7, ease: 'easeOut' }} />
+                      </div>
+                      <span className="ca-bar-tag" style={{ background: `${lv.color}15`, color: lv.color }}>{lv.label}</span>
                     </div>
-                    <ScoreBar score={score} max={20} color={axis.color} />
-                    <span className="current-tag" style={{ background: `${level.color}15`, color: level.color }}>
-                      {level.label}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </motion.div>
-          </div>{/* end result-grid */}
+                  )
+                })}
+              </div>
+            </motion.div>
+          </div>
 
-          {/* Report */}
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="result-card" style={{ marginBottom: 20 }}>
-            <h2 style={{ marginBottom: 20 }}>التقرير التفصيلي</h2>
+          <motion.div className="ca-card" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            <h2>التقرير التفصيلي</h2>
 
-            {report.strengths.length > 0 && (
-              <div style={{ borderRadius: 12, border: '1.5px solid #388e3c25', background: '#388e3c06', padding: '16px 18px', marginBottom: 14 }}>
-                <p style={{ fontWeight: 600, fontSize: '0.88rem', color: '#388e3c', marginBottom: 10 }}>💪 نقاط القوة</p>
-                <ul style={{ margin: 0, paddingInlineStart: 20 }}>
-                  {report.strengths.map((s, i) => (
-                    <li key={i} style={{ fontSize: '0.87rem', color: '#334155', lineHeight: 1.8 }}>{s}</li>
-                  ))}
-                </ul>
+            {strengths.length > 0 && (
+              <div className="ca-report-block" style={{ borderColor: '#388e3c30', background: '#388e3c06' }}>
+                <p className="ca-report-title" style={{ color: '#388e3c' }}>💪 نقاط القوة</p>
+                <ul>{strengths.map((s, i) => <li key={i}>{s}</li>)}</ul>
               </div>
             )}
 
-            {report.weaknesses.length > 0 && (
-              <div style={{ borderRadius: 12, border: '1.5px solid #c6282825', background: '#c6282806', padding: '16px 18px', marginBottom: 14 }}>
-                <p style={{ fontWeight: 600, fontSize: '0.88rem', color: '#c62828', marginBottom: 10 }}>⚠️ نقاط الضعف</p>
-                <ul style={{ margin: 0, paddingInlineStart: 20 }}>
-                  {report.weaknesses.map((w, i) => (
-                    <li key={i} style={{ fontSize: '0.87rem', color: '#334155', lineHeight: 1.8 }}>{w}</li>
-                  ))}
-                </ul>
+            {weaknesses.length > 0 && (
+              <div className="ca-report-block" style={{ borderColor: '#c6282830', background: '#c6282806' }}>
+                <p className="ca-report-title" style={{ color: '#c62828' }}>⚠️ نقاط الضعف</p>
+                <ul>{weaknesses.map((w, i) => <li key={i}>{w}</li>)}</ul>
               </div>
             )}
 
-            {/* Fixed per-axis needs for axes scoring < 16 */}
             {needAxes.length > 0 && (
-              <div style={{ marginBottom: 14 }}>
-                <p style={{ fontWeight: 600, fontSize: '0.88rem', color: '#0288d1', marginBottom: 12 }}>📈 الاحتياج التطويري حسب المحور</p>
-                {needAxes.map(axis => (
-                  <div key={axis.id} style={{ borderRadius: 10, border: `1.5px solid ${axis.color}25`, background: `${axis.color}06`, padding: '12px 16px', marginBottom: 10 }}>
-                    <p style={{ fontWeight: 600, fontSize: '0.84rem', color: axis.color, marginBottom: 8 }}>{axis.title}</p>
-                    <ul style={{ margin: 0, paddingInlineStart: 20 }}>
-                      {AXIS_NEEDS[axis.id].map((item, i) => (
-                        <li key={i} style={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.8 }}>{item}</li>
-                      ))}
-                    </ul>
+              <div className="ca-report-block" style={{ borderColor: '#0288d130', background: '#0288d106' }}>
+                <p className="ca-report-title" style={{ color: '#0288d1' }}>📈 الاحتياج التطويري حسب المحور</p>
+                {needAxes.map(ax => (
+                  <div key={ax.id} className="ca-need-axis" style={{ borderColor: `${ax.color}30` }}>
+                    <p className="ca-need-title" style={{ color: ax.color }}>{ax.title}</p>
+                    <ul>{AXIS_NEEDS[ax.id].map((n, i) => <li key={i}>{n}</li>)}</ul>
                   </div>
                 ))}
               </div>
             )}
 
-            <div style={{ borderRadius: 12, background: `${overall.color}10`, border: `1.5px solid ${overall.color}30`, padding: '16px 18px' }}>
-              <p style={{ fontWeight: 600, fontSize: '0.85rem', color: overall.color, marginBottom: 8 }}>🎯 التوصية النهائية</p>
-              <p style={{ fontSize: '0.9rem', color: '#1e293b', lineHeight: 1.8 }}>{report.recommendation}</p>
+            <div className="ca-report-block" style={{ borderColor: `${overall.color}30`, background: `${overall.color}08` }}>
+              <p className="ca-report-title" style={{ color: overall.color }}>🎯 التوصية النهائية</p>
+              <p className="ca-recommendation">{recommendation}</p>
             </div>
           </motion.div>
 
-          <div className="result-actions">
-            <button onClick={() => { setStep('questions'); setAiReport(null); setAnswers(Array(totalQuestions).fill(0)) }} className="btn-secondary">
+          <div className="ca-actions">
+            <button onClick={() => { setStep('questions'); setAxisIndex(0); setQIndex(0); setAnswers(Array(24).fill(0)); setAiReport(null) }} className="ca-btn-outline">
               ← إعادة الاستبيان
             </button>
-            <Link href="/" className="btn-primary">الصفحة الرئيسية ←</Link>
+            <Link href="/" className="ca-btn-primary">الرئيسية ←</Link>
           </div>
         </div>
       </div>
     )
   }
 
-  // ── Questions view (step === 'questions') ────────────────────────────────
+  // ── Questions — one question at a time ────────────────────────────────────
   return (
-    <div className="assessment-page" dir="rtl">
-      <div className="assessment-header">
-        <div className="assessment-header-inner">
-          <div>
-            <h1>استبيان مرحلة الاختيار</h1>
-            <p>قياس جاهزية الشخص لاختيار مساره المهني الأنسب</p>
+    <div className="ca-page" dir="rtl">
+      {/* Top bar: progress */}
+      <div className="ca-topbar" style={{ '--axis-color': axis.color } as React.CSSProperties}>
+        <div className="ca-topbar-inner">
+          <div className="ca-progress-track">
+            <div className="ca-progress-fill" style={{ width: `${progress}%`, background: axis.color }} />
           </div>
+          <p className="ca-progress-label">{totalAnswered + 1} / {totalQ}</p>
         </div>
       </div>
 
-      <div className="assessment-content">
-        {/* Progress */}
-        <div className="progress-bar-wrap">
-          <div className="progress-bar-inner" style={{ width: `${progress}%` }} />
-        </div>
-        <p className="progress-label">{answered} / {totalQuestions} سؤال</p>
+      {/* Axis pill */}
+      <div className="ca-axis-pill" style={{ borderColor: `${axis.color}40`, color: axis.color, background: `${axis.color}0d` }}>
+        <span className="ca-axis-pill-num" style={{ background: axis.color }}>{axisIndex + 1}</span>
+        {axis.title}
+      </div>
 
-        {/* Scale legend */}
-        <div className="assessment-card instructions">
-          <p>قيّم كل عبارة من <strong>1</strong> (لا تنطبق أبدًا) إلى <strong>5</strong> (تنطبق تمامًا)</p>
-        </div>
-
-        {/* Axes */}
-        {AXES.map((axis, ai) => (
-          <motion.div key={axis.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: ai * 0.05 }}
-            className="assessment-card section-card">
-            <h3 className="section-title">
-              <span className="section-number" style={{ background: axis.color }}>{ai + 1}</span>
-              {axis.title}
-            </h3>
-            {axis.questions.map((q, qi) => {
-              const idx = ai * 4 + qi
-              return (
-                <div key={qi} id={`cq-${idx}`} className="question-item">
-                  <p className="question-text">
-                    <span className="q-num">{idx + 1}.</span>
-                    {q}
-                  </p>
-                  <div className="likert-scale">
-                    {[1, 2, 3, 4, 5].map(val => (
-                      <button key={val}
-                        onClick={() => setAnswers(prev => { const n = [...prev]; n[idx] = val; return n })}
-                        className={`likert-btn ${answers[idx] === val ? 'selected' : ''}`}
-                        title={LABELS[val - 1]}>
-                        <span className="likert-val">{val}</span>
-                        <span className="likert-label">{LABELS[val - 1]}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )
-            })}
+      {/* Question card */}
+      <div className="ca-q-wrap">
+        <AnimatePresence mode="wait">
+          <motion.div key={globalIdx}
+            initial={{ opacity: 0, x: dir * 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -dir * 30 }}
+            transition={{ duration: 0.22 }}
+            className="ca-q-card"
+          >
+            <p className="ca-q-num-badge">{qIndex + 1} / 4</p>
+            <p className="ca-q-text-big">{axis.questions[qIndex]}</p>
           </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Likert — big tap targets */}
+      <div className="ca-likert-big">
+        {[1,2,3,4,5].map(val => (
+          <button key={val}
+            onClick={() => { setAnswer(val) }}
+            className={`ca-likert-big-btn ${currentAns === val ? 'active' : ''}`}
+            style={currentAns === val ? { borderColor: axis.color, background: `${axis.color}12`, color: axis.color } : {}}
+          >
+            <span className="ca-likert-big-val">{val}</span>
+            <span className="ca-likert-big-label">{LABELS[val - 1]}</span>
+          </button>
         ))}
+      </div>
 
-        {error && <p className="error-msg">{error}</p>}
-
-        <div className="assessment-actions">
-          <Link href="/" className="btn-secondary">← رجوع</Link>
-          <button onClick={handleSubmit} className="btn-primary">عرض النتائج ←</button>
-        </div>
+      {/* Sticky bottom nav */}
+      <div className="ca-bottom-nav">
+        {axisIndex === 0 && qIndex === 0
+          ? <Link href="/" className="ca-nav-back">← رجوع</Link>
+          : <button onClick={goPrev} className="ca-nav-back">← السابق</button>
+        }
+        <button
+          onClick={goNext}
+          disabled={!currentAns}
+          className="ca-nav-next"
+          style={currentAns ? { background: axis.color } : {}}
+        >
+          {isLastAxis && isLastQ ? 'عرض النتائج ←' : 'التالي ←'}
+        </button>
       </div>
     </div>
   )
