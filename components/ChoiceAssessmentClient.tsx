@@ -60,13 +60,13 @@ const AXES = [
   { id: 'execution', title: 'الجاهزية التنفيذية والمالية',  color: '#c62828', questions: ['لدي خطة أولية للخطوات التي سأقوم بها خلال الأشهر الستة القادمة.', 'لدي تصور واقعي لتكاليف الدراسة أو التدريب أو التأهيل المطلوب.', 'أستطيع الالتزام بخطة تطوير بسيطة وقابلة للقياس.', 'أنا مستعد لتجربة المجال فعليًا قبل اتخاذ القرار النهائي.'] },
 ]
 
-const LABELS = ['لا تنطبق', 'تنطبق قليلًا', 'متوسطة', 'بدرجة كبيرة', 'تنطبق تمامًا']
+const LABELS = ['لا تنطبق', 'قليلًا', 'متوسطة', 'كبيرة', 'تمامًا']
 
 function axisLevel(score: number) {
-  if (score >= 16) return { label: 'قوة واضحة', color: '#388e3c' }
+  if (score >= 16) return { label: 'قوة واضحة',       color: '#388e3c' }
   if (score >= 11) return { label: 'جيد — يحتاج دعم', color: '#0288d1' }
   if (score >= 6)  return { label: 'فجوة تحتاج تدخل', color: '#f57c00' }
-  return { label: 'ضعف حرج', color: '#c62828' }
+  return             { label: 'ضعف حرج',               color: '#c62828' }
 }
 
 function overallLevel(total: number) {
@@ -76,37 +76,69 @@ function overallLevel(total: number) {
   return             { label: 'تحتاج بناء أساس',       desc: 'هناك حاجة لإعادة بناء الأساس المهني والمعرفي والمهاري.', color: '#c62828' }
 }
 
+// ─── Likert row (shared between mobile single-Q and desktop all-Qs) ───────────
+function LikertRow({ value, color, onChange, compact }: {
+  value: number; color: string; onChange: (v: number) => void; compact?: boolean
+}) {
+  return (
+    <div className={compact ? 'ca-likert-compact' : 'ca-likert-big'}>
+      {[1,2,3,4,5].map(v => (
+        <button key={v} type="button"
+          onClick={() => onChange(v)}
+          className={`${compact ? 'ca-likert-compact-btn' : 'ca-likert-big-btn'} ${value === v ? 'active' : ''}`}
+          style={value === v ? { borderColor: color, background: `${color}12`, color } : {}}
+        >
+          <span className={compact ? 'ca-lc-val' : 'ca-likert-big-val'}>{v}</span>
+          <span className={compact ? 'ca-lc-label' : 'ca-likert-big-label'}>{LABELS[v - 1]}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export function ChoiceAssessmentClient() {
-  const [axisIndex, setAxisIndex]   = useState(0)
-  const [qIndex,    setQIndex]      = useState(0)   // question within axis: 0-3
-  const [answers,   setAnswers]     = useState<number[]>(Array(24).fill(0))
-  const [step,      setStep]        = useState<'questions' | 'loading' | 'results'>('questions')
-  const [aiReport,  setAiReport]    = useState<{ strengths: string[]; weaknesses: string[]; recommendation: string } | null>(null)
-  const [dir,       setDir]         = useState(1)
+  const [axisIndex, setAxisIndex] = useState(0)
+  const [qIndex,    setQIndex]    = useState(0)
+  const [answers,   setAnswers]   = useState<number[]>(Array(24).fill(0))
+  const [step,      setStep]      = useState<'questions' | 'loading' | 'results'>('questions')
+  const [aiReport,  setAiReport]  = useState<{ strengths: string[]; weaknesses: string[]; recommendation: string } | null>(null)
+  const [dir,       setDir]       = useState(1)
 
   const axis        = AXES[axisIndex]
   const globalIdx   = axisIndex * 4 + qIndex
   const currentAns  = answers[globalIdx]
   const isLastAxis  = axisIndex === AXES.length - 1
   const isLastQ     = qIndex === 3
+  const axisAnswers = answers.slice(axisIndex * 4, axisIndex * 4 + 4)
+  const axisComplete = axisAnswers.every(a => a > 0)
 
-  const setAnswer = (val: number) => {
-    setAnswers(prev => { const n = [...prev]; n[globalIdx] = val; return n })
-  }
+  const setAnswer = (qi: number, val: number) =>
+    setAnswers(prev => { const n = [...prev]; n[axisIndex * 4 + qi] = val; return n })
 
-  const goNext = () => {
+  // ── Mobile navigation (question by question) ──────────────────────────────
+  const mobileNext = () => {
     setDir(1)
     if (!isLastQ) { setQIndex(q => q + 1); return }
     if (!isLastAxis) { setAxisIndex(a => a + 1); setQIndex(0); return }
     handleSubmit()
   }
-
-  const goPrev = () => {
+  const mobilePrev = () => {
     setDir(-1)
     if (qIndex > 0) { setQIndex(q => q - 1); return }
     if (axisIndex > 0) { setAxisIndex(a => a - 1); setQIndex(3); return }
+  }
+
+  // ── Desktop navigation (axis by axis) ─────────────────────────────────────
+  const desktopNext = () => {
+    setDir(1)
+    if (!isLastAxis) { setAxisIndex(a => a + 1); setQIndex(0); return }
+    handleSubmit()
+  }
+  const desktopPrev = () => {
+    setDir(-1)
+    if (axisIndex > 0) { setAxisIndex(a => a - 1); setQIndex(0) }
   }
 
   const handleSubmit = async () => {
@@ -128,10 +160,6 @@ export function ChoiceAssessmentClient() {
     } catch { /* fallback to static */ }
     setStep('results')
   }
-
-  const totalAnswered = axisIndex * 4 + qIndex
-  const totalQ = 24
-  const progress = Math.round((totalAnswered / totalQ) * 100)
 
   // ── Loading ───────────────────────────────────────────────────────────────
   if (step === 'loading') {
@@ -224,14 +252,12 @@ export function ChoiceAssessmentClient() {
                 <ul>{strengths.map((s, i) => <li key={i}>{s}</li>)}</ul>
               </div>
             )}
-
             {weaknesses.length > 0 && (
               <div className="ca-report-block" style={{ borderColor: '#c6282830', background: '#c6282806' }}>
                 <p className="ca-report-title" style={{ color: '#c62828' }}>⚠️ نقاط الضعف</p>
                 <ul>{weaknesses.map((w, i) => <li key={i}>{w}</li>)}</ul>
               </div>
             )}
-
             {needAxes.length > 0 && (
               <div className="ca-report-block" style={{ borderColor: '#0288d130', background: '#0288d106' }}>
                 <p className="ca-report-title" style={{ color: '#0288d1' }}>📈 الاحتياج التطويري حسب المحور</p>
@@ -243,7 +269,6 @@ export function ChoiceAssessmentClient() {
                 ))}
               </div>
             )}
-
             <div className="ca-report-block" style={{ borderColor: `${overall.color}30`, background: `${overall.color}08` }}>
               <p className="ca-report-title" style={{ color: overall.color }}>🎯 التوصية النهائية</p>
               <p className="ca-recommendation">{recommendation}</p>
@@ -254,6 +279,9 @@ export function ChoiceAssessmentClient() {
             <button onClick={() => { setStep('questions'); setAxisIndex(0); setQIndex(0); setAnswers(Array(24).fill(0)); setAiReport(null) }} className="ca-btn-outline">
               ← إعادة الاستبيان
             </button>
+            <button onClick={() => window.print()} className="ca-btn-outline ca-btn-print">
+              🖨️ طباعة / PDF
+            </button>
             <Link href="/" className="ca-btn-primary">الرئيسية ←</Link>
           </div>
         </div>
@@ -261,70 +289,133 @@ export function ChoiceAssessmentClient() {
     )
   }
 
-  // ── Questions — one question at a time ────────────────────────────────────
+  // ── Questions ─────────────────────────────────────────────────────────────
+
+  // Progress bar: answered questions count (not counting current unanswered)
+  const answeredCount = answers.filter(a => a > 0).length
+  const progressPct   = Math.round((answeredCount / 24) * 100)
+
   return (
     <div className="ca-page" dir="rtl">
-      {/* Top bar: progress */}
-      <div className="ca-topbar" style={{ '--axis-color': axis.color } as React.CSSProperties}>
-        <div className="ca-topbar-inner">
-          <div className="ca-progress-track">
-            <div className="ca-progress-fill" style={{ width: `${progress}%`, background: axis.color }} />
+
+      {/* ══ MOBILE layout — one question at a time (hidden on desktop) ══════ */}
+      <div className="ca-mobile-view">
+        {/* Top bar */}
+        <div className="ca-topbar" style={{ borderBottom: `3px solid ${axis.color}` }}>
+          <div className="ca-topbar-inner">
+            <div className="ca-progress-track">
+              <div className="ca-progress-fill" style={{ width: `${progressPct}%`, background: axis.color }} />
+            </div>
+            <div className="ca-topbar-meta">
+              <span className="ca-axis-pill-inline" style={{ color: axis.color }}>{axis.title}</span>
+              <span className="ca-progress-label">{globalIdx + 1} / 24</span>
+            </div>
           </div>
-          <p className="ca-progress-label">{totalAnswered + 1} / {totalQ}</p>
+        </div>
+
+        {/* Question */}
+        <div className="ca-q-wrap">
+          <AnimatePresence mode="wait">
+            <motion.div key={globalIdx}
+              initial={{ opacity: 0, x: dir * 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -dir * 30 }}
+              transition={{ duration: 0.2 }}
+              className="ca-q-card"
+            >
+              <p className="ca-q-text-big">{axis.questions[qIndex]}</p>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Big likert */}
+        <LikertRow value={currentAns} color={axis.color} onChange={v => setAnswer(qIndex, v)} />
+
+        {/* Sticky nav */}
+        <div className="ca-bottom-nav">
+          {axisIndex === 0 && qIndex === 0
+            ? <Link href="/" className="ca-nav-back">← رجوع</Link>
+            : <button onClick={mobilePrev} className="ca-nav-back">← السابق</button>
+          }
+          <button onClick={mobileNext} disabled={!currentAns} className="ca-nav-next"
+            style={currentAns ? { background: axis.color } : {}}>
+            {isLastAxis && isLastQ ? 'عرض النتائج ←' : 'التالي ←'}
+          </button>
         </div>
       </div>
 
-      {/* Axis pill */}
-      <div className="ca-axis-pill" style={{ borderColor: `${axis.color}40`, color: axis.color, background: `${axis.color}0d` }}>
-        <span className="ca-axis-pill-num" style={{ background: axis.color }}>{axisIndex + 1}</span>
-        {axis.title}
+      {/* ══ DESKTOP layout — full axis at once (hidden on mobile) ══════════ */}
+      <div className="ca-desktop-view">
+        {/* Step dots + axis label */}
+        <div className="ca-desktop-header">
+          <div className="ca-desktop-header-inner">
+            <div className="ca-desktop-steps">
+              {AXES.map((ax, i) => (
+                <div key={ax.id} className={`ca-desktop-dot ${i === axisIndex ? 'active' : i < axisIndex ? 'done' : ''}`}
+                  style={{ background: i <= axisIndex ? ax.color : '#e2e8f0' }} title={ax.title} />
+              ))}
+            </div>
+            <span className="ca-desktop-counter">المحور {axisIndex + 1} من {AXES.length}</span>
+          </div>
+          <div className="ca-progress-track" style={{ maxWidth: 760, margin: '8px auto 0', borderRadius: 99 }}>
+            <div className="ca-progress-fill" style={{ width: `${progressPct}%`, background: axis.color, borderRadius: 99 }} />
+          </div>
+        </div>
+
+        {/* Axis card */}
+        <div className="ca-desktop-body">
+          <AnimatePresence mode="wait">
+            <motion.div key={axisIndex}
+              initial={{ opacity: 0, x: dir * 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -dir * 24 }}
+              transition={{ duration: 0.25 }}
+              className="ca-desktop-card"
+            >
+              {/* Axis header stripe */}
+              <div className="ca-desktop-axis-header" style={{ background: `${axis.color}0e`, borderBottom: `2px solid ${axis.color}22` }}>
+                <div className="ca-desktop-axis-num" style={{ background: axis.color }}>{axisIndex + 1}</div>
+                <div>
+                  <p className="ca-desktop-axis-sub">المحور</p>
+                  <p className="ca-desktop-axis-title" style={{ color: axis.color }}>{axis.title}</p>
+                </div>
+                {/* Legend */}
+                <div className="ca-desktop-legend">
+                  {[1,2,3,4,5].map(v => (
+                    <span key={v}><strong>{v}</strong> {LABELS[v-1]}</span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Questions */}
+              <div className="ca-desktop-questions">
+                {axis.questions.map((q, qi) => (
+                  <div key={qi} className="ca-desktop-q-row">
+                    <p className="ca-desktop-q-text">
+                      <span className="ca-desktop-q-num" style={{ color: axis.color }}>{qi + 1}</span>
+                      {q}
+                    </p>
+                    <LikertRow value={axisAnswers[qi]} color={axis.color} onChange={v => setAnswer(qi, v)} compact />
+                  </div>
+                ))}
+              </div>
+
+              {/* Nav */}
+              <div className="ca-desktop-nav">
+                {axisIndex === 0
+                  ? <Link href="/" className="ca-btn-outline">← رجوع</Link>
+                  : <button onClick={desktopPrev} className="ca-btn-outline">← السابق</button>
+                }
+                <button onClick={desktopNext} disabled={!axisComplete} className="ca-btn-primary"
+                  style={axisComplete ? { background: axis.color } : {}}>
+                  {isLastAxis ? 'عرض النتائج ←' : 'التالي ←'}
+                </button>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
 
-      {/* Question card */}
-      <div className="ca-q-wrap">
-        <AnimatePresence mode="wait">
-          <motion.div key={globalIdx}
-            initial={{ opacity: 0, x: dir * 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -dir * 30 }}
-            transition={{ duration: 0.22 }}
-            className="ca-q-card"
-          >
-            <p className="ca-q-num-badge">{qIndex + 1} / 4</p>
-            <p className="ca-q-text-big">{axis.questions[qIndex]}</p>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-
-      {/* Likert — big tap targets */}
-      <div className="ca-likert-big">
-        {[1,2,3,4,5].map(val => (
-          <button key={val}
-            onClick={() => { setAnswer(val) }}
-            className={`ca-likert-big-btn ${currentAns === val ? 'active' : ''}`}
-            style={currentAns === val ? { borderColor: axis.color, background: `${axis.color}12`, color: axis.color } : {}}
-          >
-            <span className="ca-likert-big-val">{val}</span>
-            <span className="ca-likert-big-label">{LABELS[val - 1]}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Sticky bottom nav */}
-      <div className="ca-bottom-nav">
-        {axisIndex === 0 && qIndex === 0
-          ? <Link href="/" className="ca-nav-back">← رجوع</Link>
-          : <button onClick={goPrev} className="ca-nav-back">← السابق</button>
-        }
-        <button
-          onClick={goNext}
-          disabled={!currentAns}
-          className="ca-nav-next"
-          style={currentAns ? { background: axis.color } : {}}
-        >
-          {isLastAxis && isLastQ ? 'عرض النتائج ←' : 'التالي ←'}
-        </button>
-      </div>
     </div>
   )
 }
