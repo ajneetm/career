@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY!
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${GEMINI_API_KEY}`
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`
 
 async function callGemini(prompt: string): Promise<string> {
   const res = await fetch(GEMINI_URL, {
@@ -9,7 +9,7 @@ async function callGemini(prompt: string): Promise<string> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 1500, temperature: 0.4 },
+      generationConfig: { maxOutputTokens: 1500, temperature: 0.4, responseMimeType: 'application/json' },
     }),
   })
   const json = await res.json()
@@ -73,8 +73,9 @@ Available stages: choice, adapt, role, effective, esteem, retire`
 
     const raw = await callGemini(prompt)
 
-    // Extract JSON from response
-    const match = raw.match(/\[[\s\S]*\]/)
+    // Strip markdown code fences if present, then extract JSON array
+    const cleaned = raw.replace(/```(?:json)?\s*/g, '').replace(/```/g, '')
+    const match = cleaned.match(/\[[\s\S]*\]/)
     if (!match) throw new Error('Invalid AI response format')
 
     const questions = JSON.parse(match[0])

@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { STAGES } from '@/lib/assessment'
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY!
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${GEMINI_API_KEY}`
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`
 
 async function callGemini(prompt: string): Promise<string> {
   const res = await fetch(GEMINI_URL, {
@@ -11,7 +11,7 @@ async function callGemini(prompt: string): Promise<string> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 2000, temperature: 0.5 },
+      generationConfig: { maxOutputTokens: 2000, temperature: 0.5, responseMimeType: 'application/json' },
     }),
   })
   const json = await res.json()
@@ -119,8 +119,9 @@ Your task: Analyze these answers and return JSON only in this format, no other t
 
     const raw = await callGemini(analysisPrompt)
 
-    // Extract JSON
-    const match = raw.match(/\{[\s\S]*\}/)
+    // Strip markdown code fences if present, then extract JSON object
+    const cleaned = raw.replace(/```(?:json)?\s*/g, '').replace(/```/g, '')
+    const match = cleaned.match(/\{[\s\S]*\}/)
     if (!match) throw new Error('Invalid AI response')
 
     const analysis = JSON.parse(match[0])
