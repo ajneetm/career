@@ -95,6 +95,7 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
     align-items: flex-start;
     justify-content: center;
     gap: 16px;
+    padding-inline-start: 48px;
 }
 
 .cpd-logo {
@@ -110,10 +111,23 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
     margin: 0 0 14px 0;
 }
 
+.cpd-subtitle {
+    font-size: 0.9rem;
+    color: #64748b;
+    line-height: 1.7;
+    margin: 0;
+}
+
+.cpd-badge-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
 .hero-cpd .cpd-desc {
     border-top: none;
     padding-top: 0;
-    text-align: center;
+    text-align: start;
     font-size: 0.9rem;
 }
 .hero-cpd .cpd-btn {

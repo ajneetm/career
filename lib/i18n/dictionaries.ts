@@ -92,7 +92,7 @@ export const dictionaries: Record<
       cpdSubtitle: 'Discover your career path today — identify your strengths and what you need to achieve your professional ambitions.',
       cpdBadge: 'Build your career path with high-quality CPD',
       cpdWorkshop: 'We help you understand your career path, discover your opportunities, and define your next steps through a 4-hour CPD-accredited practical workshop.',
-      cpdBtn: 'Towards an inspiring and ambitious career path',
+      cpdBtn: 'Where are you in your career path?',
     },
     about: {
       title: 'About Us',
@@ -172,7 +172,7 @@ export const dictionaries: Record<
       cpdSubtitle: 'اكتشف مسارك المهني اليوم، وتعرّف على نقاط قوتك، وما تحتاج إليه لتحقيق طموحك المهني.',
       cpdBadge: 'أبني مسارك المهني بجودة عالية من CPD',
       cpdWorkshop: 'نساعدك على فهم مسارك المهني، واكتشاف فرصك، وتحديد خطواتك القادمة من خلال ورشة عملية لمدة 4 ساعات معتمدة من CPD.',
-      cpdBtn: 'ابدأ الاختبار',
+      cpdBtn: 'أين أنت من مسارك المهني؟',
     },
     about: {
       title: 'من نحن',

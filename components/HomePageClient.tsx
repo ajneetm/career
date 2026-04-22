@@ -117,6 +117,15 @@ export function HomePageClient() {
             })}
           </motion.p>
 
+          <motion.p
+            className="cpd-subtitle"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.2, duration: 0.5 }}
+          >
+            {home.cpdSubtitle}
+          </motion.p>
+
         </section>
 
         {/* divider */}
@@ -142,6 +151,7 @@ export function HomePageClient() {
               y: { delay: 0.8, duration: 3.5, repeat: Infinity, ease: 'easeInOut' },
             }}
           />
+          <p className="cpd-badge-text">{home.cpdBadge}</p>
           <p className="cpd-desc">
             {typedDesc}
             <Cursor visible={!descDone} />
