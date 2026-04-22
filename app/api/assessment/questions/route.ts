@@ -73,11 +73,12 @@ Return JSON only in this format, no other text:
 Available stages: choice, adapt, role, effective, esteem, retire`
 
     const raw = await callGemini(prompt)
+    if (!raw) throw new Error('Gemini returned empty response')
 
     // Strip markdown code fences if present, then extract JSON array
     const cleaned = raw.replace(/```(?:json)?\s*/g, '').replace(/```/g, '')
     const match = cleaned.match(/\[[\s\S]*\]/)
-    if (!match) throw new Error('Invalid AI response format')
+    if (!match) throw new Error(`No JSON array found in: ${cleaned.slice(0, 200)}`)
 
     const questions = JSON.parse(match[0])
     if (!Array.isArray(questions) || questions.length < 10) throw new Error('Not enough questions generated')
