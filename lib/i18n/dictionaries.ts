@@ -8,6 +8,7 @@ export const dictionaries: Record<
     home: {
       explore: string;
       introAria: string;
+      tagline: string;
       intro: IntroSegment[];
       stageTitles: Record<string, string>;
       cpdTitle: string;
@@ -65,6 +66,7 @@ export const dictionaries: Record<
     home: {
       explore: 'EXPLORE',
       introAria: 'C4E Introduction',
+      tagline: 'Towards an Inspiring and Ambitious Career Path',
       stageTitles: {
         choice: 'CHOICE',
         adapt: 'ADAPT',
@@ -144,6 +146,7 @@ export const dictionaries: Record<
     home: {
       explore: 'استكشف',
       introAria: 'تعريف C4E',
+      tagline: 'نحو بناء مسار مهني ملهم وطموح',
       stageTitles: {
         choice: 'اختيار',
         adapt: 'تأقلم',

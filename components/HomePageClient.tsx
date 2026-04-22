@@ -81,8 +81,18 @@ export function HomePageClient() {
       {/* ── Hero Top ── */}
       <div className="hero-top">
 
-        {/* Left — intro + typewriter + button */}
+        {/* Left — tagline + intro */}
         <section className="home-intro" aria-label={home.introAria}>
+
+          {/* big tagline */}
+          <motion.h1
+            className="hero-tagline"
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            {home.tagline}
+          </motion.h1>
 
           {/* paragraph — words fade in staggered */}
           <motion.p
@@ -107,27 +117,6 @@ export function HomePageClient() {
             })}
           </motion.p>
 
-          {/* typewriter desc */}
-          <p className="cpd-desc">
-            {typedDesc}
-            <Cursor visible={!descDone} />
-          </p>
-
-          {/* button fades in after typewriter done */}
-          <AnimatePresence>
-            {descDone && (
-              <motion.button
-                className="cpd-btn"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-              >
-                <FiClipboard size={17} />
-                {home.cpdBtn}
-              </motion.button>
-            )}
-          </AnimatePresence>
-
         </section>
 
         {/* divider */}
@@ -139,7 +128,7 @@ export function HomePageClient() {
           style={{ transformOrigin: 'top' }}
         />
 
-        {/* Right — CPD logo floating */}
+        {/* Right — CPD logo + CTA */}
         <div className="hero-cpd">
           <motion.img
             src="/cpd-logo.png"
@@ -153,6 +142,24 @@ export function HomePageClient() {
               y: { delay: 0.8, duration: 3.5, repeat: Infinity, ease: 'easeInOut' },
             }}
           />
+          <p className="cpd-desc">
+            {typedDesc}
+            <Cursor visible={!descDone} />
+          </p>
+          <AnimatePresence>
+            {descDone && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                <Link href="/assessment" className="cpd-btn">
+                  <FiClipboard size={17} />
+                  {home.cpdBtn}
+                </Link>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
       </div>
@@ -201,6 +208,7 @@ export function HomePageClient() {
           </motion.div>
         ))}
       </motion.div>
+
 
     </div>
   );
