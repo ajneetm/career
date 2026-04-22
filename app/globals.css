@@ -88,82 +88,72 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
     margin: 10px auto 20px;
 }
 
+/* CPD logo side */
 .hero-cpd {
-    flex: 1;
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
-    gap: 16px;
-    padding-inline-start: 48px;
+    padding: 0 32px;
 }
-
 .cpd-logo {
-    height: 180px;
+    height: 200px;
     object-fit: contain;
 }
 
-.hero-tagline {
-    font-size: clamp(1.1rem, 2vw, 1.5rem);
-    font-weight: 700;
-    color: #0f172a;
-    line-height: 1.4;
-    margin: 0 0 14px 0;
+/* Content side */
+.hero-content {
+    flex: 1.4;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 0 40px;
 }
-
-.cpd-subtitle {
-    font-size: 0.9rem;
-    color: #64748b;
-    line-height: 1.7;
+.hero-tagline {
+    font-size: clamp(1.2rem, 2.2vw, 1.7rem);
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.35;
     margin: 0;
 }
-
-.cpd-badge-text {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #64748b;
-}
-
-.hero-cpd .cpd-desc {
-    border-top: none;
-    padding-top: 0;
-    text-align: start;
-    font-size: 0.9rem;
-}
-.hero-cpd .cpd-btn {
-    text-decoration: none !important;
-}
-
-.cpd-desc {
-    font-size: 1rem;
-    color: #0f172a;
+.hero-workshop {
+    font-size: 0.95rem;
+    color: #475569;
     line-height: 1.8;
-    padding-top: 18px;
-    border-top: 1px solid #e2e8f0;
-    font-weight: 500;
+    margin: 0;
 }
-
-.cpd-btn {
-    align-self: flex-start;
+.hero-btns {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.btn-hero-primary {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    padding: 14px 28px;
+    gap: 8px;
+    padding: 13px 24px;
     background: linear-gradient(135deg, #1e40af, #0f172a);
     color: white;
-    border: none;
+    text-decoration: none;
     border-radius: 12px;
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     font-weight: 600;
-    cursor: pointer;
     transition: transform 0.2s, box-shadow 0.25s;
     box-shadow: 0 4px 18px rgba(30,64,175,0.3);
-    letter-spacing: 0.2px;
 }
-.cpd-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(30,64,175,0.38);
+.btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(30,64,175,0.38); }
+.btn-hero-secondary {
+    display: inline-flex;
+    align-items: center;
+    padding: 13px 24px;
+    border: 1.5px solid #cbd5e1;
+    color: #334155;
+    text-decoration: none;
+    border-radius: 12px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    transition: border-color 0.2s, background 0.2s;
 }
+.btn-hero-secondary:hover { border-color: #1e40af; color: #1e40af; background: #eff6ff; }
 
 .hero-divider {
     width: 1px;

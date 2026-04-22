@@ -1,12 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { FiClipboard } from 'react-icons/fi';
 
 import { useI18n } from '@/lib/i18n/I18nProvider';
-import type { IntroTone } from '@/lib/i18n/types';
 
 interface CareerStage {
   id: string;
@@ -16,55 +14,9 @@ interface CareerStage {
   color: string;
 }
 
-const toneClass: Record<IntroTone, string> = {
-  default: '',
-  primary: 'intro-highlight intro-highlight-primary',
-  blue: 'intro-highlight intro-highlight-blue',
-  orange: 'intro-highlight intro-highlight-orange',
-  green: 'intro-highlight intro-highlight-green',
-};
-
-/* ── Typewriter hook ── */
-function useTypewriter(text: string, speed = 22, delay = 600) {
-  const [displayed, setDisplayed] = useState('');
-  const [done, setDone] = useState(false);
-
-  useEffect(() => {
-    setDisplayed('');
-    setDone(false);
-    const start = setTimeout(() => {
-      let i = 0;
-      const timer = setInterval(() => {
-        i++;
-        setDisplayed(text.slice(0, i));
-        if (i >= text.length) { clearInterval(timer); setDone(true); }
-      }, speed);
-      return () => clearInterval(timer);
-    }, delay);
-    return () => clearTimeout(start);
-  }, [text, speed, delay]);
-
-  return { displayed, done };
-}
-
-/* ── Blinking cursor ── */
-function Cursor({ visible }: { visible: boolean }) {
-  return (
-    <motion.span
-      animate={{ opacity: visible ? [1, 0, 1] : 0 }}
-      transition={{ repeat: Infinity, duration: 0.9, ease: 'easeInOut' }}
-      style={{ display: 'inline-block', width: 2, height: '1em', background: '#0ea5e9', marginInlineStart: 2, verticalAlign: 'middle', borderRadius: 1 }}
-    />
-  );
-}
-
 export function HomePageClient() {
   const { t } = useI18n();
   const home = t('home');
-
-  /* typewriter on the cpd workshop text */
-  /* paragraph animation ends ~2.3s → typewriter starts after */
-  const { displayed: typedDesc, done: descDone } = useTypewriter(home.cpdWorkshop, 18, 2400);
 
   const stages: CareerStage[] = [
     { id: 'choice',    letter: 'C', title: home.stageTitles.choice,    img: '/Artboard 2.jpg', color: 'var(--yellow)'     },
@@ -78,103 +30,45 @@ export function HomePageClient() {
   return (
     <div className="page-fill">
 
-      {/* ── Hero Top ── */}
+      {/* ── Hero ── */}
       <div className="hero-top">
 
-        {/* Left — tagline + intro */}
-        <section className="home-intro" aria-label={home.introAria}>
-
-          {/* big tagline */}
-          <motion.h1
-            className="hero-tagline"
-            initial={{ opacity: 0, y: -16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            {home.tagline}
-          </motion.h1>
-
-          {/* paragraph — words fade in staggered */}
-          <motion.p
-            initial="hidden"
-            animate="visible"
-            variants={{ visible: { transition: { staggerChildren: 0.04, delayChildren: 0.2 } } }}
-          >
-            {home.intro.map((segment, i) => {
-              const cls = toneClass[segment.tone];
-              const words = segment.text.split(/(\s+)/);
-              return words.map((word, j) => (
-                <motion.span
-                  key={`${i}-${j}`}
-                  className={cls || undefined}
-                  variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}
-                  transition={{ duration: 0.35 }}
-                  style={{ display: 'inline' }}
-                >
-                  {word}
-                </motion.span>
-              ));
-            })}
-          </motion.p>
-
-          <motion.p
-            className="cpd-subtitle"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.2, duration: 0.5 }}
-          >
-            {home.cpdSubtitle}
-          </motion.p>
-
-        </section>
+        {/* CPD logo side */}
+        <motion.div
+          className="hero-cpd"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1, y: [0, -10, 0] }}
+          transition={{ opacity: { duration: 0.6 }, scale: { duration: 0.6 }, y: { delay: 0.8, duration: 3.5, repeat: Infinity, ease: 'easeInOut' } }}
+        >
+          <img src="/cpd-logo.png" alt="CPD Certified" className="cpd-logo" />
+        </motion.div>
 
         {/* divider */}
-        <motion.div
-          className="hero-divider"
-          initial={{ scaleY: 0 }}
-          animate={{ scaleY: 1 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          style={{ transformOrigin: 'top' }}
-        />
+        <motion.div className="hero-divider" initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={{ duration: 0.6, delay: 0.2 }} style={{ transformOrigin: 'top' }} />
 
-        {/* Right — CPD logo + CTA */}
-        <div className="hero-cpd">
-          <motion.img
-            src="/cpd-logo.png"
-            alt="CPD Certified"
-            className="cpd-logo"
-            initial={{ opacity: 0, scale: 0.7 }}
-            animate={{ opacity: 1, scale: 1, y: [0, -10, 0] }}
-            transition={{
-              opacity: { duration: 0.6 },
-              scale:   { duration: 0.6 },
-              y: { delay: 0.8, duration: 3.5, repeat: Infinity, ease: 'easeInOut' },
-            }}
-          />
-          <p className="cpd-badge-text">{home.cpdBadge}</p>
-          <p className="cpd-desc">
-            {typedDesc}
-            <Cursor visible={!descDone} />
-          </p>
-          <AnimatePresence>
-            {descDone && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-              >
-                <Link href="/assessment" className="cpd-btn">
-                  <FiClipboard size={17} />
-                  {home.cpdBtn}
-                </Link>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        {/* Content side */}
+        <motion.section
+          className="hero-content"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <h1 className="hero-tagline">{home.tagline}</h1>
+          <p className="hero-workshop">{home.cpdWorkshop}</p>
+          <div className="hero-btns">
+            <Link href="/assessment" className="btn-hero-primary">
+              <FiClipboard size={16} />
+              {home.cpdBtn}
+            </Link>
+            <Link href="/workshops" className="btn-hero-secondary">
+              {home.explore}
+            </Link>
+          </div>
+        </motion.section>
 
       </div>
 
-      {/* ── Career Cards — stagger in ── */}
+      {/* ── Career Cards ── */}
       <motion.div
         className="career-container"
         dir="ltr"
@@ -218,7 +112,6 @@ export function HomePageClient() {
           </motion.div>
         ))}
       </motion.div>
-
 
     </div>
   );
