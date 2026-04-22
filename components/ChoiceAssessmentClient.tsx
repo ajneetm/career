@@ -188,13 +188,14 @@ function ScoreBar({ score, max, color }: { score: number; max: number; color: st
 export function ChoiceAssessmentClient() {
   const totalQuestions = AXES.length * 4
   const [answers, setAnswers] = useState<number[]>(Array(totalQuestions).fill(0))
-  const [submitted, setSubmitted] = useState(false)
+  const [step, setStep] = useState<'questions' | 'loading' | 'results'>('questions')
+  const [aiReport, setAiReport] = useState<{ strengths: string[]; weaknesses: string[]; needs: { axis: string; items: string[] }[]; recommendation: string } | null>(null)
   const [error, setError] = useState('')
 
   const answered = answers.filter(a => a > 0).length
   const progress = (answered / totalQuestions) * 100
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const first = answers.findIndex(a => a === 0)
     if (first !== -1) {
       setError(`يرجى الإجابة على السؤال ${first + 1}`)
@@ -202,18 +203,65 @@ export function ChoiceAssessmentClient() {
       return
     }
     setError('')
-    setSubmitted(true)
+    setStep('loading')
     window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    try {
+      const axisScores = AXES.map((axis, ai) => ({
+        title: axis.title,
+        score: answers.slice(ai * 4, ai * 4 + 4).reduce((s, v) => s + v, 0),
+      }))
+      const total = axisScores.reduce((s, a) => s + a.score, 0)
+
+      const res = await fetch('/api/assessment/choice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ axisScores, total }),
+      })
+      const json = await res.json()
+      if (json.error) throw new Error(json.error)
+      setAiReport(json.report)
+    } catch (e: any) {
+      // fallback to static report on AI failure
+      setAiReport(null)
+    }
+    setStep('results')
+  }
+
+  // ── Loading screen ────────────────────────────────────────────────────────
+  if (step === 'loading') {
+    return (
+      <div className="assessment-page" dir="rtl">
+        <div className="assessment-header">
+          <div className="assessment-header-inner">
+            <div><h1>استبيان مرحلة الاختيار</h1></div>
+          </div>
+        </div>
+        <div className="assessment-content">
+          <div className="submitting-screen">
+            <div className="spinner" />
+            <p>الذكاء الاصطناعي يحلل نتائجك ويكتب تقريرك المخصص...</p>
+            <p className="submitting-sub">بضع ثوانٍ فقط</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // ── Results view ──────────────────────────────────────────────────────────
-  if (submitted) {
+  if (step === 'results') {
     const axisScores = AXES.map((_, ai) =>
       answers.slice(ai * 4, ai * 4 + 4).reduce((s, v) => s + v, 0)
     )
     const total = axisScores.reduce((s, v) => s + v, 0)
     const overall = overallLevel(total)
-    const report = buildReport(answers)
+    const staticReport = buildReport(answers)
+    const report = aiReport ?? {
+      strengths: staticReport.strengths,
+      weaknesses: staticReport.weaknesses,
+      needs: staticReport.weakAxes.map(w => ({ axis: w.axis.title, items: w.needs })),
+      recommendation: staticReport.recommendation,
+    }
 
     return (
       <div className="result-page" dir="rtl">
@@ -297,22 +345,23 @@ export function ChoiceAssessmentClient() {
               </div>
             )}
 
-            {/* Per-axis needs for weak axes */}
-            {report.weakAxes.length > 0 && (
+            {/* Per-axis needs */}
+            {report.needs.length > 0 && (
               <div style={{ marginBottom: 14 }}>
                 <p style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0288d1', marginBottom: 12 }}>📈 الاحتياج التطويري حسب المحور</p>
-                {report.weakAxes.map(({ axis, needs }) => (
-                  <div key={axis.id} style={{ borderRadius: 10, border: `1.5px solid ${axis.color}25`, background: `${axis.color}06`, padding: '12px 16px', marginBottom: 10 }}>
-                    <p style={{ fontWeight: 700, fontSize: '0.84rem', color: axis.color, marginBottom: 8 }}>
-                      {axis.title}
-                    </p>
-                    <ul style={{ margin: 0, paddingInlineStart: 20 }}>
-                      {needs.map((n, i) => (
-                        <li key={i} style={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.8 }}>{n}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+                {report.needs.map((n, ni) => {
+                  const axis = AXES.find(a => a.title === n.axis) ?? AXES[ni % AXES.length]
+                  return (
+                    <div key={ni} style={{ borderRadius: 10, border: `1.5px solid ${axis.color}25`, background: `${axis.color}06`, padding: '12px 16px', marginBottom: 10 }}>
+                      <p style={{ fontWeight: 700, fontSize: '0.84rem', color: axis.color, marginBottom: 8 }}>{n.axis}</p>
+                      <ul style={{ margin: 0, paddingInlineStart: 20 }}>
+                        {n.items.map((item, i) => (
+                          <li key={i} style={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.8 }}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )
+                })}
               </div>
             )}
 
@@ -323,7 +372,7 @@ export function ChoiceAssessmentClient() {
           </motion.div>
 
           <div className="result-actions">
-            <button onClick={() => { setSubmitted(false); setAnswers(Array(totalQuestions).fill(0)) }} className="btn-secondary">
+            <button onClick={() => { setStep('questions'); setAiReport(null); setAnswers(Array(totalQuestions).fill(0)) }} className="btn-secondary">
               ← إعادة الاستبيان
             </button>
             <Link href="/" className="btn-primary">الصفحة الرئيسية ←</Link>
@@ -333,7 +382,7 @@ export function ChoiceAssessmentClient() {
     )
   }
 
-  // ── Questions view ────────────────────────────────────────────────────────
+  // ── Questions view (step === 'questions') ────────────────────────────────
   return (
     <div className="assessment-page" dir="rtl">
       <div className="assessment-header">
