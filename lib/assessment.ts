@@ -104,11 +104,22 @@ export function calculateScores(answers: number[]) {
 export function determineCurrentStage(age: number, yearsExp: number, position: string): StageKey {
   const positionIndex = POSITIONS_AR.indexOf(position)
 
-  if (age >= 60 || positionIndex >= 8)                    return 'retire'
-  if (age >= 40 || positionIndex >= 6)                    return 'esteem'
-  if (age >= 30 || positionIndex >= 4)                    return 'effective'
-  if (age >= 23 || positionIndex >= 2 || yearsExp >= 2)   return 'role'
-  if (age >= 22 || positionIndex >= 1 || yearsExp >= 0)   return 'adapt'
+  // Score: يجمع عدة عوامل لتحديد المرحلة بدقة
+  // Retire: عمر 60+ أو منصب قيادي أعلى مع خبرة كافية
+  if (age >= 60 || (positionIndex >= 8 && yearsExp >= 20)) return 'retire'
+
+  // Esteem: عمر 40+ أو منصب رفيع مع خبرة 15+ سنة
+  if (age >= 40 || (positionIndex >= 6 && yearsExp >= 15)) return 'esteem'
+
+  // Effective: عمر 30+ أو منصب قيادي مع خبرة 10+ سنة
+  if (age >= 30 || (positionIndex >= 5 && yearsExp >= 10)) return 'effective'
+
+  // Role: عمر 25+ أو خبرة 5+ سنوات مع منصب جيد
+  if (age >= 25 || yearsExp >= 5 || (positionIndex >= 3 && yearsExp >= 3)) return 'role'
+
+  // Adapt: عمر 22+ أو بدأ العمل
+  if (age >= 22 || positionIndex >= 1) return 'adapt'
+
   return 'choice'
 }
 
