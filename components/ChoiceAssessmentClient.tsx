@@ -1,8 +1,44 @@
 'use client'
 
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
+
+// ─── Radar Chart ─────────────────────────────────────────────────────────────
+function RadarChart({ scores, labels, colors }: { scores: number[]; labels: string[]; colors: string[] }) {
+  const size = 280, cx = size / 2, cy = size / 2, radius = 100, n = scores.length
+  const angle = (i: number) => (Math.PI * 2 * i) / n - Math.PI / 2
+  const point = (r: number, i: number) => ({ x: cx + r * Math.cos(angle(i)), y: cy + r * Math.sin(angle(i)) })
+  const dataPoints = scores.map((s, i) => point((s / 100) * radius, i))
+  const dataPath = dataPoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ' Z'
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ overflow: 'visible' }}>
+      {[20, 40, 60, 80, 100].map(r => {
+        const pts = Array.from({ length: n }, (_, i) => point((r / 100) * radius, i))
+        const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ' Z'
+        return <path key={r} d={path} fill="none" stroke="#e2e8f0" strokeWidth="1" />
+      })}
+      {Array.from({ length: n }, (_, i) => {
+        const outer = point(radius, i)
+        return <line key={i} x1={cx} y1={cy} x2={outer.x} y2={outer.y} stroke="#cbd5e1" strokeWidth="1" />
+      })}
+      <path d={dataPath} fill="rgba(30,95,220,0.12)" stroke="#1e5fdc" strokeWidth="2.5" />
+      {dataPoints.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={5} fill={colors[i]} stroke="white" strokeWidth="1.5" />
+      ))}
+      {Array.from({ length: n }, (_, i) => {
+        const p = point(radius + 24, i)
+        const ps = point((scores[i] / 100) * radius, i)
+        return (
+          <g key={i}>
+            <text x={ps.x} y={ps.y - 9} textAnchor="middle" fontSize="9" fontWeight="700" fill={colors[i]}>{scores[i]}%</text>
+            <text x={p.x} y={p.y} textAnchor="middle" dominantBaseline="central" fontSize="10" fontWeight="600" fill="#1e293b">{labels[i]}</text>
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
@@ -189,7 +225,7 @@ export function ChoiceAssessmentClient() {
   const totalQuestions = AXES.length * 4
   const [answers, setAnswers] = useState<number[]>(Array(totalQuestions).fill(0))
   const [step, setStep] = useState<'questions' | 'loading' | 'results'>('questions')
-  const [aiReport, setAiReport] = useState<{ strengths: string[]; weaknesses: string[]; needs: { axis: string; items: string[] }[]; recommendation: string } | null>(null)
+  const [aiReport, setAiReport] = useState<{ strengths: string[]; weaknesses: string[]; recommendation: string } | null>(null)
   const [error, setError] = useState('')
 
   const answered = answers.filter(a => a > 0).length
@@ -256,12 +292,14 @@ export function ChoiceAssessmentClient() {
     const total = axisScores.reduce((s, v) => s + v, 0)
     const overall = overallLevel(total)
     const staticReport = buildReport(answers)
-    const report = aiReport ?? {
-      strengths: staticReport.strengths,
-      weaknesses: staticReport.weaknesses,
-      needs: staticReport.weakAxes.map(w => ({ axis: w.axis.title, items: w.needs })),
-      recommendation: staticReport.recommendation,
+    const report = {
+      strengths: aiReport?.strengths ?? staticReport.strengths,
+      weaknesses: aiReport?.weaknesses ?? staticReport.weaknesses,
+      recommendation: aiReport?.recommendation ?? staticReport.recommendation,
     }
+    // Axes that need development (score < 16)
+    const needAxes = AXES.filter((_, i) => axisScores[i] < 16)
+    const radarScores = axisScores.map(s => Math.round((s / 20) * 100))
 
     return (
       <div className="result-page" dir="rtl">
@@ -293,9 +331,22 @@ export function ChoiceAssessmentClient() {
             </div>
           </motion.div>
 
-          {/* Axes scores */}
+          {/* Radar + Axes scores */}
+          <div className="result-grid">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
+            className="result-card radar-card">
+            <h2>الرادار المهني</h2>
+            <div className="radar-wrap">
+              <RadarChart
+                scores={radarScores}
+                labels={AXES.map(a => a.title.split(' ')[0])}
+                colors={AXES.map(a => a.color)}
+              />
+            </div>
+          </motion.div>
+
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-            className="result-card" style={{ marginBottom: 20 }}>
+            className="result-card scores-card" style={{ marginBottom: 0 }}>
             <h2 style={{ marginBottom: 20 }}>النتائج حسب المحاور</h2>
             <div className="scores-list">
               {AXES.map((axis, i) => {
@@ -317,6 +368,7 @@ export function ChoiceAssessmentClient() {
               })}
             </div>
           </motion.div>
+          </div>{/* end result-grid */}
 
           {/* Report */}
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
@@ -325,7 +377,7 @@ export function ChoiceAssessmentClient() {
 
             {report.strengths.length > 0 && (
               <div style={{ borderRadius: 12, border: '1.5px solid #388e3c25', background: '#388e3c06', padding: '16px 18px', marginBottom: 14 }}>
-                <p style={{ fontWeight: 700, fontSize: '0.88rem', color: '#388e3c', marginBottom: 10 }}>💪 نقاط القوة</p>
+                <p style={{ fontWeight: 600, fontSize: '0.88rem', color: '#388e3c', marginBottom: 10 }}>💪 نقاط القوة</p>
                 <ul style={{ margin: 0, paddingInlineStart: 20 }}>
                   {report.strengths.map((s, i) => (
                     <li key={i} style={{ fontSize: '0.87rem', color: '#334155', lineHeight: 1.8 }}>{s}</li>
@@ -336,7 +388,7 @@ export function ChoiceAssessmentClient() {
 
             {report.weaknesses.length > 0 && (
               <div style={{ borderRadius: 12, border: '1.5px solid #c6282825', background: '#c6282806', padding: '16px 18px', marginBottom: 14 }}>
-                <p style={{ fontWeight: 700, fontSize: '0.88rem', color: '#c62828', marginBottom: 10 }}>⚠️ نقاط الضعف</p>
+                <p style={{ fontWeight: 600, fontSize: '0.88rem', color: '#c62828', marginBottom: 10 }}>⚠️ نقاط الضعف</p>
                 <ul style={{ margin: 0, paddingInlineStart: 20 }}>
                   {report.weaknesses.map((w, i) => (
                     <li key={i} style={{ fontSize: '0.87rem', color: '#334155', lineHeight: 1.8 }}>{w}</li>
@@ -345,28 +397,25 @@ export function ChoiceAssessmentClient() {
               </div>
             )}
 
-            {/* Per-axis needs */}
-            {report.needs.length > 0 && (
+            {/* Fixed per-axis needs for axes scoring < 16 */}
+            {needAxes.length > 0 && (
               <div style={{ marginBottom: 14 }}>
-                <p style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0288d1', marginBottom: 12 }}>📈 الاحتياج التطويري حسب المحور</p>
-                {report.needs.map((n, ni) => {
-                  const axis = AXES.find(a => a.title === n.axis) ?? AXES[ni % AXES.length]
-                  return (
-                    <div key={ni} style={{ borderRadius: 10, border: `1.5px solid ${axis.color}25`, background: `${axis.color}06`, padding: '12px 16px', marginBottom: 10 }}>
-                      <p style={{ fontWeight: 700, fontSize: '0.84rem', color: axis.color, marginBottom: 8 }}>{n.axis}</p>
-                      <ul style={{ margin: 0, paddingInlineStart: 20 }}>
-                        {n.items.map((item, i) => (
-                          <li key={i} style={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.8 }}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )
-                })}
+                <p style={{ fontWeight: 600, fontSize: '0.88rem', color: '#0288d1', marginBottom: 12 }}>📈 الاحتياج التطويري حسب المحور</p>
+                {needAxes.map(axis => (
+                  <div key={axis.id} style={{ borderRadius: 10, border: `1.5px solid ${axis.color}25`, background: `${axis.color}06`, padding: '12px 16px', marginBottom: 10 }}>
+                    <p style={{ fontWeight: 600, fontSize: '0.84rem', color: axis.color, marginBottom: 8 }}>{axis.title}</p>
+                    <ul style={{ margin: 0, paddingInlineStart: 20 }}>
+                      {AXIS_NEEDS[axis.id].map((item, i) => (
+                        <li key={i} style={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.8 }}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
               </div>
             )}
 
             <div style={{ borderRadius: 12, background: `${overall.color}10`, border: `1.5px solid ${overall.color}30`, padding: '16px 18px' }}>
-              <p style={{ fontWeight: 700, fontSize: '0.85rem', color: overall.color, marginBottom: 8 }}>🎯 التوصية النهائية</p>
+              <p style={{ fontWeight: 600, fontSize: '0.85rem', color: overall.color, marginBottom: 8 }}>🎯 التوصية النهائية</p>
               <p style={{ fontSize: '0.9rem', color: '#1e293b', lineHeight: 1.8 }}>{report.recommendation}</p>
             </div>
           </motion.div>
