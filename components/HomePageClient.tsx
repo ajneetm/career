@@ -81,32 +81,7 @@ export function HomePageClient() {
       {/* ── Hero Top ── */}
       <div className="hero-top">
 
-        {/* Left — CPD logo floating */}
-        <div className="hero-cpd">
-          <motion.img
-            src="/cpd-logo.png"
-            alt="CPD Certified"
-            className="cpd-logo"
-            initial={{ opacity: 0, scale: 0.7 }}
-            animate={{ opacity: 1, scale: 1, y: [0, -10, 0] }}
-            transition={{
-              opacity: { duration: 0.6 },
-              scale:   { duration: 0.6 },
-              y: { delay: 0.8, duration: 3.5, repeat: Infinity, ease: 'easeInOut' },
-            }}
-          />
-        </div>
-
-        {/* divider */}
-        <motion.div
-          className="hero-divider"
-          initial={{ scaleY: 0 }}
-          animate={{ scaleY: 1 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          style={{ transformOrigin: 'top' }}
-        />
-
-        {/* Right — intro + typewriter + button */}
+        {/* Left — intro + typewriter + button */}
         <section className="home-intro" aria-label={home.introAria}>
 
           {/* paragraph — words fade in staggered */}
@@ -154,6 +129,32 @@ export function HomePageClient() {
           </AnimatePresence>
 
         </section>
+
+        {/* divider */}
+        <motion.div
+          className="hero-divider"
+          initial={{ scaleY: 0 }}
+          animate={{ scaleY: 1 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          style={{ transformOrigin: 'top' }}
+        />
+
+        {/* Right — CPD logo floating */}
+        <div className="hero-cpd">
+          <motion.img
+            src="/cpd-logo.png"
+            alt="CPD Certified"
+            className="cpd-logo"
+            initial={{ opacity: 0, scale: 0.7 }}
+            animate={{ opacity: 1, scale: 1, y: [0, -10, 0] }}
+            transition={{
+              opacity: { duration: 0.6 },
+              scale:   { duration: 0.6 },
+              y: { delay: 0.8, duration: 3.5, repeat: Infinity, ease: 'easeInOut' },
+            }}
+          />
+        </div>
+
       </div>
 
       {/* ── Career Cards — stagger in ── */}
