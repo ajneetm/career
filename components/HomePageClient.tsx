@@ -47,9 +47,6 @@ export function HomePageClient() {
               <FiClipboard size={16} />
               {home.cpdBtn}
             </Link>
-            <Link href="/workshops" className="btn-hero-secondary">
-              {home.explore}
-            </Link>
           </div>
         </motion.section>
 

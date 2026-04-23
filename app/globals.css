@@ -136,9 +136,11 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
     flex: 0 0 50%;
     display: flex;
     flex-direction: column;
+    align-items: center;
     justify-content: center;
     gap: 20px;
-    padding: 48px 56px;
+    padding: 40px;
+    text-align: center;
 }
 .hero-tagline {
     font-size: clamp(1.2rem, 2.2vw, 1.7rem);
@@ -146,17 +148,20 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
     color: #0f172a;
     line-height: 1.35;
     margin: 0;
+    max-width: 360px;
 }
 .hero-workshop {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     color: #475569;
     line-height: 1.8;
     margin: 0;
+    max-width: 360px;
 }
 .hero-btns {
     display: flex;
     gap: 12px;
     flex-wrap: wrap;
+    justify-content: center;
 }
 .btn-hero-primary {
     display: inline-flex;
