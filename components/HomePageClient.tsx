@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FiClipboard } from 'react-icons/fi';
 
 import { useI18n } from '@/lib/i18n/I18nProvider';
 
@@ -34,21 +33,27 @@ export function HomePageClient() {
       <div className="hero-top">
 
         {/* Content side */}
-        <motion.section
-          className="hero-content"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          <h1 className="hero-tagline">{home.tagline}</h1>
-          <p className="hero-workshop">{home.cpdWorkshop}</p>
-          <div className="hero-btns">
-            <Link href="/assessment" className="btn-hero-primary">
-              <FiClipboard size={16} />
+        <div className="hero-content">
+          <motion.h1
+            className="hero-tagline"
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1, y: [0, -10, 0] }}
+            transition={{ opacity: { duration: 0.6 }, scale: { duration: 0.6 }, y: { delay: 0.8, duration: 3.5, repeat: Infinity, ease: 'easeInOut' } }}
+          >
+            {home.tagline}
+          </motion.h1>
+          <motion.div
+            className="cpd-tagline-row"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+          >
+            <p className="cpd-tagline">{home.cpdWorkshop}</p>
+            <Link href="/assessment" className="btn-join-us">
               {home.cpdBtn}
             </Link>
-          </div>
-        </motion.section>
+          </motion.div>
+        </div>
 
         {/* divider */}
         <motion.div className="hero-divider" initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={{ duration: 0.6, delay: 0.2 }} style={{ transformOrigin: 'top' }} />
