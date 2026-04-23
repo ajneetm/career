@@ -17,6 +17,7 @@ export const dictionaries: Record<
       cpdWorkshop: string;
       cpdBtn: string;
       cpdTagline: string;
+      joinUs: string;
     };
     about: {
       title: string;
@@ -96,6 +97,7 @@ export const dictionaries: Record<
       cpdWorkshop: 'We help you understand your career path, discover your opportunities, and define your next steps through a 4-hour CPD-accredited practical workshop.',
       cpdBtn: 'Where are you in your career path?',
       cpdTagline: 'Join the workshop to define your career path — from Choice to Esteem — CPD Certified',
+      joinUs: 'Join Us',
     },
     about: {
       title: 'About Us',
@@ -178,6 +180,7 @@ export const dictionaries: Record<
       cpdWorkshop: 'نساعدك على فهم مسارك المهني، واكتشاف فرصك، وتحديد خطواتك القادمة من خلال ورشة عملية لمدة 4 ساعات معتمدة من CPD.',
       cpdBtn: 'أين أنت من مسارك المهني؟',
       cpdTagline: 'انضم إلى ورشة العمل لتحديد مسارك المهني من الاختيار إلى المكانة .. شهادة معتمدة من CPD',
+      joinUs: 'انضم إلينا',
     },
     about: {
       title: 'من نحن',

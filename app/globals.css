@@ -100,16 +100,36 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
     height: 200px;
     object-fit: contain;
 }
-.cpd-tagline {
-    font-size: clamp(0.8rem, 1.1vw, 1rem);
-    font-weight: 600;
-    color: #1e293b;
-    text-align: center;
-    line-height: 1.6;
-    max-width: 320px;
+.cpd-tagline-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
     border-top: 1.5px solid #e2e8f0;
     padding-top: 16px;
+    max-width: 360px;
 }
+.cpd-tagline {
+    font-size: clamp(0.75rem, 1vw, 0.88rem);
+    font-weight: 500;
+    color: #475569;
+    line-height: 1.6;
+    flex: 1;
+    margin: 0;
+}
+.btn-join-us {
+    flex-shrink: 0;
+    display: inline-block;
+    padding: 9px 18px;
+    background: #1e293b;
+    color: white;
+    text-decoration: none;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+.btn-join-us:hover { background: #0f172a; }
 
 /* Content side */
 .hero-content {

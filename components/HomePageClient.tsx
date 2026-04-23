@@ -66,14 +66,15 @@ export function HomePageClient() {
             animate={{ opacity: 1, scale: 1, y: [0, -10, 0] }}
             transition={{ opacity: { duration: 0.6 }, scale: { duration: 0.6 }, y: { delay: 0.8, duration: 3.5, repeat: Infinity, ease: 'easeInOut' } }}
           />
-          <motion.p
-            className="cpd-tagline"
+          <motion.div
+            className="cpd-tagline-row"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.5 }}
           >
-            {home.cpdTagline}
-          </motion.p>
+            <p className="cpd-tagline">{home.cpdTagline}</p>
+            <Link href="/workshops" className="btn-join-us">{home.joinUs}</Link>
+          </motion.div>
         </div>
 
       </div>
