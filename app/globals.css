@@ -142,13 +142,31 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
     padding: 40px;
     text-align: center;
 }
-.hero-tagline {
-    font-size: clamp(1.6rem, 3vw, 2.4rem);
+.hero-brand-mark {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+.hero-brand-letters {
+    display: flex;
+    gap: 2px;
+    font-size: clamp(3.2rem, 5.5vw, 5rem);
     font-weight: 800;
-    color: #0f172a;
-    line-height: 1.25;
-    margin: 0;
-    text-align: center;
+    line-height: 1;
+    letter-spacing: 0.04em;
+}
+.hero-brand-letters span {
+    display: inline-block;
+    transition: transform 0.2s;
+}
+.hero-brand-letters span:hover { transform: translateY(-4px); }
+.hero-brand-sub {
+    font-size: clamp(0.55rem, 0.9vw, 0.72rem);
+    font-weight: 700;
+    letter-spacing: 0.35em;
+    color: #94a3b8;
+    text-transform: uppercase;
 }
 .btn-hero-primary {
     display: inline-flex;

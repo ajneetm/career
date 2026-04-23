@@ -32,16 +32,25 @@ export function HomePageClient() {
       {/* ── Hero ── */}
       <div className="hero-top">
 
-        {/* Content side */}
+        {/* Content side — brand mark */}
         <div className="hero-content">
-          <motion.h1
-            className="hero-tagline"
+          <motion.div
+            className="hero-brand-mark"
             initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1, y: [0, -10, 0] }}
             transition={{ opacity: { duration: 0.6 }, scale: { duration: 0.6 }, y: { delay: 0.8, duration: 3.5, repeat: Infinity, ease: 'easeInOut' } }}
           >
-            {home.tagline}
-          </motion.h1>
+            <div className="hero-brand-letters" dir="ltr">
+              <span style={{ color: 'var(--yellow)' }}>C</span>
+              <span style={{ color: 'var(--orange)' }}>A</span>
+              <span style={{ color: 'var(--red)' }}>R</span>
+              <span style={{ color: 'var(--green)' }}>E</span>
+              <span style={{ color: 'var(--light-blue)' }}>E</span>
+              <span style={{ color: 'var(--dark-blue)' }}>R</span>
+            </div>
+            <p className="hero-brand-sub">FOR EVERYONE</p>
+          </motion.div>
+
           <motion.div
             className="cpd-tagline-row"
             initial={{ opacity: 0, y: 10 }}
@@ -49,9 +58,7 @@ export function HomePageClient() {
             transition={{ duration: 0.5, delay: 0.5 }}
           >
             <p className="cpd-tagline">{home.cpdWorkshop}</p>
-            <Link href="/assessment" className="btn-join-us">
-              {home.cpdBtn}
-            </Link>
+            <Link href="/assessment" className="btn-join-us">{home.cpdBtn}</Link>
           </motion.div>
         </div>
 
