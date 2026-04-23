@@ -16,6 +16,7 @@ export const dictionaries: Record<
       cpdBadge: string;
       cpdWorkshop: string;
       cpdBtn: string;
+      cpdTagline: string;
     };
     about: {
       title: string;
@@ -94,6 +95,7 @@ export const dictionaries: Record<
       cpdBadge: 'Build your career path with high-quality CPD',
       cpdWorkshop: 'We help you understand your career path, discover your opportunities, and define your next steps through a 4-hour CPD-accredited practical workshop.',
       cpdBtn: 'Where are you in your career path?',
+      cpdTagline: 'Join the workshop to define your career path — from Choice to Esteem — CPD Certified',
     },
     about: {
       title: 'About Us',
@@ -175,6 +177,7 @@ export const dictionaries: Record<
       cpdBadge: 'أبني مسارك المهني بجودة عالية من CPD',
       cpdWorkshop: 'نساعدك على فهم مسارك المهني، واكتشاف فرصك، وتحديد خطواتك القادمة من خلال ورشة عملية لمدة 4 ساعات معتمدة من CPD.',
       cpdBtn: 'أين أنت من مسارك المهني؟',
+      cpdTagline: 'انضم إلى ورشة العمل لتحديد مسارك المهني من الاختيار إلى المكانة .. شهادة معتمدة من CPD',
     },
     about: {
       title: 'من نحن',

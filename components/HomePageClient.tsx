@@ -57,14 +57,24 @@ export function HomePageClient() {
         <motion.div className="hero-divider" initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={{ duration: 0.6, delay: 0.2 }} style={{ transformOrigin: 'top' }} />
 
         {/* CPD logo side */}
-        <motion.div
-          className="hero-cpd"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1, y: [0, -10, 0] }}
-          transition={{ opacity: { duration: 0.6 }, scale: { duration: 0.6 }, y: { delay: 0.8, duration: 3.5, repeat: Infinity, ease: 'easeInOut' } }}
-        >
-          <img src="/cpd-logo.png" alt="CPD Certified" className="cpd-logo" />
-        </motion.div>
+        <div className="hero-cpd">
+          <motion.img
+            src="/cpd-logo.png"
+            alt="CPD Certified"
+            className="cpd-logo"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1, y: [0, -10, 0] }}
+            transition={{ opacity: { duration: 0.6 }, scale: { duration: 0.6 }, y: { delay: 0.8, duration: 3.5, repeat: Infinity, ease: 'easeInOut' } }}
+          />
+          <motion.p
+            className="cpd-tagline"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+          >
+            {home.cpdTagline}
+          </motion.p>
+        </div>
 
       </div>
 

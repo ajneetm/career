@@ -90,13 +90,25 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
 .hero-cpd {
     flex: 0 0 50%;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 20px;
     padding: 40px;
 }
 .cpd-logo {
     height: 200px;
     object-fit: contain;
+}
+.cpd-tagline {
+    font-size: clamp(0.8rem, 1.1vw, 1rem);
+    font-weight: 600;
+    color: #1e293b;
+    text-align: center;
+    line-height: 1.6;
+    max-width: 320px;
+    border-top: 1.5px solid #e2e8f0;
+    padding-top: 16px;
 }
 
 /* Content side */
