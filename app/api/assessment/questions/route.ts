@@ -2,7 +2,99 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash']
 
-async function callGemini(prompt: string): Promise<string> {
+const SYSTEM_PROMPT = `أنت وكيل ذكاء اصطناعي متخصص في تقييم المسار المهني ضمن إطار C4E (Career for Everyone).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+المراحل الست لـ C4E
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. CHOICE (الاختيار) — مرحلة اتخاذ القرار المهني وتحديد الاتجاه
+2. ADAPT (التأقلم)  — مرحلة الانتقال والتكيف مع بيئة عمل جديدة
+3. ROLE (الدور)     — مرحلة تعريف الدور وبناء الهوية المهنية
+4. EFFECTIVE (الفعالية) — مرحلة تحقيق الأثر والكفاءة العالية
+5. ESTEEM (التقدير) — مرحلة بناء السمعة والمكانة والتأثير القيادي
+6. RETIRE (الإرث)   — مرحلة تمرير الخبرة والتحول أو التقاعد المهني
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+قواعد تحديد المرحلة — طبّقها بالترتيب، أول قاعدة تنطبق هي الفاصلة
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CHOICE:
+- لا يعمل + عمر ≤ 25 + عدد الجهات = 0
+- لا يعمل + عمر ≤ 25 (بغض النظر عن الجهات)
+- يعمل + موظف جديد + عدد الجهات = 0
+
+ADAPT:
+- يعمل + موظف جديد + سنوات ≤ 1
+- لا يعمل + عمر بين 25 و35 + عدد الجهات ≥ 1
+- يعمل + أي منصب + سنوات ≤ 1 (بغض النظر عن عدد الجهات)
+
+ROLE:
+- يعمل + (موظف جونيور أو موظف سينيور) + سنوات بين 2 و8
+- عمر بين 25 و38 + يعمل + ليس في وظيفة قيادية أو تأثيرية (أي ليس رئيس وحدة أو أعلى)
+
+EFFECTIVE:
+- يعمل + (موظف سينيور أو رئيس وحدة أو رئيس قسم)
+- سنوات ≥ 4 + عمر بين 23 و39
+
+ESTEEM:
+- يعمل + (مستشار أو رئيس قسم أو رئيس وحدة أو مساعد مدير أو مدير إدارة أو رئيس قطاع)
+- سنوات ≥ 12 أو عمر ≥ 40
+
+RETIRE:
+- يعمل + (رئيس تنفيذي أو مستشار/خبير أو منصب قيادي أعلى) — على مشارف التقاعد
+- عمر ≥ 55
+- لا يعمل + عمر ≥ 50 + سنوات ≥ 15
+
+حالة التعارض: عمر < 30 → انزل مرحلة، عمر ≥ 50 → ارفع مرحلة
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+بنية الاستبيان
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+24 سؤالاً موزعة على 6 محاور (4 أسئلة لكل محور)، مقياس ليكرت 1-5.
+
+المحاور الثابتة:
+1. الوعي الذاتي — مدى معرفة الشخص بنقاط قوته وضعفه
+2. الوضوح المهني — وضوح الهدف والمسار
+3. الاستعداد للتغيير — المرونة والقدرة على التكيف
+4. الكفاءة العملية — المهارات والأداء الفعلي
+5. العلاقات المهنية — الشبكة والتواصل
+6. الطموح والنمو — الدافعية والتطوير المستمر
+
+شروط الأسئلة — مهم جداً:
+- كل بند يجب أن يكون عبارة تقريرية (statement) يوافق عليها المستخدم أو يعارضها، وليس سؤالاً مباشراً
+- صياغة صحيحة: "أشعر بوضوح تام تجاه الدور المنوط بي في قسمي"
+- صياغة خاطئة: "هل أنت واضح في دورك؟" أو "ما هي أبرز تحدياتك؟"
+- كل عبارة تبدأ بـ "أشعر" أو "أستطيع" أو "أمتلك" أو "أسعى" أو "أدرك" أو "أتمكن" أو ما شابهها
+- صغ كل عبارة لتعكس تحديات وسياق المرحلة المحددة تحديداً
+- لا تستخدم عبارات عامة تصلح لأي مرحلة
+- استخدم لغة تناسب المستوى الوظيفي للمستخدم
+- العبارات باللغة العربية الفصحى البسيطة
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+صيغة الإخراج — JSON فقط بدون أي نص خارجه
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{
+  "stage": "CHOICE",
+  "stageAr": "الاختيار",
+  "reasoning": "جملة أو جملتان تشرح سبب اختيار هذه المرحلة",
+  "axes": [
+    {
+      "id": "axis_1",
+      "title": "الوعي الذاتي",
+      "questions": [
+        { "id": "q1", "text": "نص السؤال" },
+        { "id": "q2", "text": "نص السؤال" },
+        { "id": "q3", "text": "نص السؤال" },
+        { "id": "q4", "text": "نص السؤال" }
+      ]
+    }
+  ]
+}`
+
+async function callGemini(userMessage: string, systemPrompt: string): Promise<string> {
   const key = process.env.GEMINI_API_KEY
   if (!key) throw new Error('GEMINI_API_KEY is not set')
 
@@ -13,8 +105,13 @@ async function callGemini(prompt: string): Promise<string> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 1500, temperature: 0.4, responseMimeType: 'application/json' },
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+        generationConfig: {
+          maxOutputTokens: 4000,
+          temperature: 0.3,
+          responseMimeType: 'application/json',
+        },
       }),
     })
     const json = await res.json()
@@ -27,71 +124,39 @@ async function callGemini(prompt: string): Promise<string> {
 
 export async function POST(req: NextRequest) {
   try {
-    const { age, yearsExperience, position, language = 'ar' } = await req.json()
+    const {
+      firstName, lastName,
+      age, isWorking, position,
+      previousEmployers, yearsAtLastEmployer,
+    } = await req.json()
 
-    const prompt = language === 'ar'
-      ? `أنت خبير في نموذج أجني للمسار المهني (CAREER) الذي يتكون من 6 مراحل:
-1. الاختيار (Choice) - سن 15+ : اكتشاف الميول، اختيار التخصص
-2. التأقلم (Adapt) - سن 22+ : الدخول لسوق العمل، فهم بيئة العمل
-3. الدور (Role) - سن 23+ : إتقان العمل، تحمل المسؤولية، الإنجاز
-4. الفاعلية (Effective) - سن 30+ : تحقيق أثر ملموس، ابتكار، قيادة
-5. المكانة (Esteem) - سن 40+ : تمكين الآخرين، صناعة الفارق المؤسسي
-6. التقاعد (Retire) - سن 60+ : نقل المعرفة، بناء الإرث
+    if (!age || position === undefined || isWorking === undefined) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
 
-بيانات المشارك:
+    const userMessage = `البيانات:
 - العمر: ${age} سنة
-- سنوات الخبرة: ${yearsExperience} سنة
+- يعمل حالياً: ${isWorking ? 'نعم' : 'لا'}
 - المنصب الحالي: ${position}
+- عدد الجهات التي عمل بها مسبقاً: ${previousEmployers ?? 0}
+- سنوات العمل لدى آخر جهة: ${yearsAtLastEmployer ?? 0}
+${firstName ? `- الاسم: ${firstName}` : ''}
+${lastName  ? `- الكنية: ${lastName}`  : ''}`
 
-مهمتك: ولّد 15 سؤالاً مخصصاً لهذه الحالة بالضبط لتحديد مرحلته الفعلية.
-- يجب أن تكون الأسئلة مناسبة لعمره ومنصبه وخبرته
-- ركّز على المراحل المحتملة لهذه الحالة (لا تسأل عن التقاعد لشخص عمره 23)
-- كل سؤال يقيس بُعداً مختلفاً من أبعاد المراحل
-
-أرجع JSON فقط بهذا الشكل بدون أي نص آخر:
-[
-  {"id": 1, "text": "نص السؤال", "stage": "role"},
-  ...
-]
-
-المراحل المتاحة: choice, adapt, role, effective, esteem, retire`
-      : `You are an expert in the Ajnee Career Pathway Model (CAREER) with 6 stages:
-1. Choice - 15+: discovering interests, choosing specialization
-2. Adapt - 22+: entering the workforce, understanding work culture
-3. Role - 23+: mastering work, taking responsibility
-4. Effective - 30+: creating impact, innovation, leadership
-5. Esteem - 40+: empowering others, institutional impact
-6. Retire - 60+: transferring knowledge, building legacy
-
-Participant data:
-- Age: ${age}
-- Years of experience: ${yearsExperience}
-- Current position: ${position}
-
-Your task: Generate 15 personalized questions for this exact profile to determine their actual stage.
-- Questions must match their age, position and experience
-- Focus on likely stages for this profile (don't ask retirement questions for a 23-year-old)
-
-Return JSON only in this format, no other text:
-[
-  {"id": 1, "text": "question text", "stage": "role"},
-  ...
-]
-
-Available stages: choice, adapt, role, effective, esteem, retire`
-
-    const raw = await callGemini(prompt)
+    const raw = await callGemini(userMessage, SYSTEM_PROMPT)
     if (!raw) throw new Error('Gemini returned empty response')
 
-    // Strip markdown code fences if present, then extract JSON array
     const cleaned = raw.replace(/```(?:json)?\s*/g, '').replace(/```/g, '')
-    const match = cleaned.match(/\[[\s\S]*\]/)
-    if (!match) throw new Error(`No JSON array found in: ${cleaned.slice(0, 200)}`)
+    const match = cleaned.match(/\{[\s\S]*\}/)
+    if (!match) throw new Error(`No JSON found in: ${cleaned.slice(0, 200)}`)
 
-    const questions = JSON.parse(match[0])
-    if (!Array.isArray(questions) || questions.length < 10) throw new Error('Not enough questions generated')
+    const result = JSON.parse(match[0])
 
-    return NextResponse.json({ questions })
+    if (!result.stage || !Array.isArray(result.axes) || result.axes.length < 6) {
+      throw new Error('Invalid structure from Gemini')
+    }
+
+    return NextResponse.json(result)
   } catch (err: any) {
     console.error('Questions generation error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })

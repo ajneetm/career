@@ -68,11 +68,13 @@ model Assessment {
   lastName        String?
   email           String?
   phone           String?
-  age             Int
-  yearsExperience Int
-  position        String
-  // 21 answers stored as JSON array of integers [1-5]
-  answers         Json
+  age               Int
+  isWorking         Boolean?
+  previousEmployers Int?
+  yearsExperience   Int
+  position          String
+  // answers stored as JSON array of integers [1-5]
+  answers           Json
   // Computed stage scores (0-100)
   scoreChoice     Float
   scoreAdapt      Float

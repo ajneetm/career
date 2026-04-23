@@ -31,12 +31,12 @@ export async function POST(req: NextRequest) {
   try {
     const {
       firstName, lastName, email, phone,
-      age, yearsExperience, position,
+      age, isWorking, previousEmployers, yearsExperience, position,
       questions, answers,
       language = 'ar',
     } = await req.json()
 
-    if (!age || !yearsExperience || !position || !answers || !questions) {
+    if (!age || yearsExperience === undefined || !position || !answers || !questions) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
@@ -61,8 +61,10 @@ export async function POST(req: NextRequest) {
 
 بيانات المشارك:
 - العمر: ${age} سنة
-- سنوات الخبرة: ${yearsExperience}
+- يعمل حالياً: ${isWorking ? 'نعم' : 'لا'}
 - المنصب: ${position}
+- عدد الجهات السابقة: ${previousEmployers ?? 0}
+- سنوات الخبرة لدى آخر جهة: ${yearsExperience}
 
 إجابات المشارك على الأسئلة المخصصة (مقياس 1-5):
 ${qaPairs}
@@ -98,8 +100,10 @@ ${qaPairs}
 
 Participant data:
 - Age: ${age}
-- Years of experience: ${yearsExperience}
+- Currently working: ${isWorking ? 'Yes' : 'No'}
 - Position: ${position}
+- Previous employers: ${previousEmployers ?? 0}
+- Years at last employer: ${yearsExperience}
 
 Answers to personalized questions (scale 1-5):
 ${qaPairs}
@@ -144,8 +148,10 @@ Your task: Analyze these answers and return JSON only in this format, no other t
         lastName:        lastName  || null,
         email:           email     || null,
         phone:           phone     || null,
-        age:             parseInt(age),
-        yearsExperience: parseInt(yearsExperience),
+        age:               parseInt(age),
+        isWorking:         isWorking ?? null,
+        previousEmployers: previousEmployers != null ? parseInt(previousEmployers) : null,
+        yearsExperience:   parseInt(yearsExperience),
         position,
         answers,
         scoreChoice:     scores.choice     ?? 50,

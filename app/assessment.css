@@ -54,6 +54,25 @@
 .position-btn:hover  { border-color: #1e5fdc; color: #1e5fdc; }
 .position-btn.selected { border-color: #1e5fdc; background: #eff6ff; color: #1e5fdc; font-weight: 500; }
 
+/* Yes/No working toggle */
+.toggle-row { display: flex; gap: 12px; margin-top: 8px; }
+.toggle-btn {
+  flex: 1; padding: 12px; border-radius: 10px; font-size: 0.88rem; font-weight: 500;
+  border: 1.5px solid #e2e8f0; background: white; color: #475569;
+  cursor: pointer; transition: all 0.2s; text-align: center;
+}
+.toggle-btn:hover   { border-color: #1e5fdc; color: #1e5fdc; }
+.toggle-btn.selected { border-color: #1e5fdc; background: #eff6ff; color: #1e5fdc; }
+
+/* Detected stage banner */
+.stage-banner {
+  background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px;
+  padding: 14px 18px; margin-bottom: 4px;
+}
+.stage-banner-label { font-size: 0.72rem; color: #0284c7; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.stage-banner-name  { font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+.stage-banner-reason { font-size: 0.82rem; color: #475569; line-height: 1.6; }
+
 .progress-bar-wrap { background: #e2e8f0; border-radius: 99px; height: 6px; margin-bottom: 8px; overflow: hidden; }
 .progress-bar-inner { height: 100%; background: linear-gradient(90deg, #1565c0, #0288d1); border-radius: 99px; transition: width 0.4s; }
 .progress-label { font-size: 0.8rem; color: #64748b; margin-bottom: 16px; }

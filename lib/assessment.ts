@@ -12,27 +12,31 @@ export const STAGES: { key: StageKey; labelAr: string; labelEn: string; color: s
 
 // ─── Positions ────────────────────────────────────────────────────────────────
 export const POSITIONS_AR = [
-  'لا يعمل',
   'موظف جديد',
   'موظف جونيور',
   'موظف سينيور',
-  'رئيس قسم',
   'رئيس وحدة',
+  'رئيس قسم',
+  'مساعد مدير',
   'مدير إدارة',
   'رئيس قطاع',
+  'رئيس تنفيذي',
+  'مستشار/خبير',
   'منصب قيادي أعلى',
 ]
 
 export const POSITIONS_EN = [
-  'Not working',
   'New employee',
   'Junior employee',
   'Senior employee',
+  'Unit head',
   'Head of department',
-  'Unit manager',
-  'Division manager',
+  'Assistant manager',
+  'Administration manager',
   'Sector head',
-  'Senior leadership',
+  'CEO',
+  'Consultant / Expert',
+  'Senior leadership position',
 ]
 
 // ─── 21 Questions ─────────────────────────────────────────────────────────────

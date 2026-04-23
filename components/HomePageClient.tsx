@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 
 import { useI18n } from '@/lib/i18n/I18nProvider';
+import { GlobeBg } from './GlobeBg';
 
 interface CareerStage {
   id: string;
@@ -18,12 +19,12 @@ export function HomePageClient() {
   const home = t('home');
 
   const stages: CareerStage[] = [
-    { id: 'choice',    letter: 'C', title: home.stageTitles.choice,    img: '/Artboard 2.jpg', color: 'var(--yellow)'     },
-    { id: 'adapt',     letter: 'A', title: home.stageTitles.adapt,     img: '/Artboard 3.jpg', color: 'var(--orange)'     },
-    { id: 'role',      letter: 'R', title: home.stageTitles.role,      img: '/Artboard 4.jpg', color: 'var(--red)'        },
-    { id: 'effective', letter: 'E', title: home.stageTitles.effective, img: '/Artboard 5.jpg', color: 'var(--green)'      },
-    { id: 'esteem',    letter: 'E', title: home.stageTitles.esteem,    img: '/Artboard 6.jpg', color: 'var(--light-blue)' },
-    { id: 'retire',    letter: 'R', title: home.stageTitles.retire,    img: '/Artboard 7.jpg', color: 'var(--dark-blue)'  },
+    { id: 'choice',    letter: 'C', title: home.stageTitles.choice,    img: '/Artboard-2.png', color: 'var(--yellow)'     },
+    { id: 'adapt',     letter: 'A', title: home.stageTitles.adapt,     img: '/Artboard-3.png', color: 'var(--orange)'     },
+    { id: 'role',      letter: 'R', title: home.stageTitles.role,      img: '/Artboard-4.png', color: 'var(--red)'        },
+    { id: 'effective', letter: 'E', title: home.stageTitles.effective, img: '/Artboard-5.png', color: 'var(--green)'      },
+    { id: 'esteem',    letter: 'E', title: home.stageTitles.esteem,    img: '/Artboard-6.png', color: 'var(--light-blue)' },
+    { id: 'retire',    letter: 'R', title: home.stageTitles.retire,    img: '/Artboard-7.png', color: 'var(--dark-blue)'  },
   ];
 
   return (
@@ -31,31 +32,32 @@ export function HomePageClient() {
 
       {/* ── Hero ── */}
       <div className="hero-top">
+        <GlobeBg />
 
         {/* Content side */}
         <div className="hero-content">
           <motion.div
-            className="hero-tagline-wrap"
+            className="hero-main-row"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
           >
-            <h1 className="hero-tagline">{home.tagline}</h1>
+            <div className="hero-tagline-wrap">
+              <span className="hero-tagline-accent" />
+              <h1 className="hero-tagline">{home.tagline}</h1>
+            </div>
+            <p className="hero-desc">{home.cpdWorkshop}</p>
           </motion.div>
 
           <motion.div
-            className="cpd-tagline-row"
+            className="hero-bottom-row"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            <p className="cpd-tagline">{home.cpdWorkshop}</p>
             <Link href="/assessment" className="btn-join-us">{home.cpdBtn}</Link>
           </motion.div>
         </div>
-
-        {/* divider */}
-        <motion.div className="hero-divider" initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={{ duration: 0.6, delay: 0.2 }} style={{ transformOrigin: 'top' }} />
 
         {/* CPD logo side */}
         <div className="hero-cpd">

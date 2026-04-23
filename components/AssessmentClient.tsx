@@ -10,7 +10,9 @@ type Step = 'form' | 'loading-questions' | 'questions' | 'submitting'
 const LIKERT_AR = ['لا أوافق بشدة', 'لا أوافق', 'محايد', 'أوافق', 'أوافق بشدة']
 const LIKERT_EN = ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree']
 
-interface AIQuestion { id: number; text: string; stage: string }
+interface AxisQuestion { id: string; text: string }
+interface Axis { id: string; title: string; questions: AxisQuestion[] }
+interface StageInfo { stage: string; stageAr: string; reasoning: string }
 
 export function AssessmentClient() {
   const router = useRouter()
@@ -18,23 +20,36 @@ export function AssessmentClient() {
   const isAr = lang === 'ar'
 
   // Form fields
-  const [firstName,       setFirstName]      = useState('')
-  const [lastName,        setLastName]        = useState('')
-  const [email,           setEmail]           = useState('')
-  const [phone,           setPhone]           = useState('')
-  const [age,             setAge]             = useState('')
-  const [yearsExperience, setYearsExp]        = useState('')
-  const [position,        setPosition]        = useState('')
+  const [firstName,          setFirstName]      = useState('')
+  const [lastName,           setLastName]        = useState('')
+  const [email,              setEmail]           = useState('')
+  const [phone,              setPhone]           = useState('')
+  const [age,                setAge]             = useState('')
+  const [isWorking,          setIsWorking]       = useState<boolean | null>(null)
+  const [position,           setPosition]        = useState('')
+  const [previousEmployers,  setPrevEmployers]   = useState('')
+  const [yearsAtLastEmployer,setYearsAtLast]     = useState('')
 
   // Questions & answers
-  const [aiQuestions, setAiQuestions] = useState<AIQuestion[]>([])
-  const [answers,     setAnswers]     = useState<number[]>([])
-  const [step,        setStep]        = useState<Step>('form')
-  const [error,       setError]       = useState('')
+  const [axes,       setAxes]       = useState<Axis[]>([])
+  const [stageInfo,  setStageInfo]  = useState<StageInfo | null>(null)
+  const [answers,    setAnswers]    = useState<number[]>([])
+  const [step,       setStep]       = useState<Step>('form')
+  const [error,      setError]      = useState('')
 
   const likert    = isAr ? LIKERT_AR : LIKERT_EN
   const positions = isAr ? POSITIONS_AR : POSITIONS_EN
-  const formValid = age.trim() && yearsExperience.trim() && position
+
+  const totalQuestions = axes.reduce((sum, ax) => sum + ax.questions.length, 0)
+  const answeredCount  = answers.filter(a => a > 0).length
+
+  const formValid = age.trim() && isWorking !== null && position &&
+                    previousEmployers.trim() && yearsAtLastEmployer.trim()
+
+  // flat list of questions (for submit)
+  const flatQuestions = axes.flatMap(ax =>
+    ax.questions.map(q => ({ id: q.id, text: q.text, stage: stageInfo?.stage?.toLowerCase() ?? '' }))
+  )
 
   // ── Load AI questions ──────────────────────────────────────────────────────
   const handleLoadQuestions = async () => {
@@ -45,12 +60,22 @@ export function AssessmentClient() {
       const res = await fetch('/api/assessment/questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ age: parseInt(age), yearsExperience: parseInt(yearsExperience), position: posAr, language: lang }),
+        body: JSON.stringify({
+          firstName: firstName || null,
+          lastName:  lastName  || null,
+          age:                  parseInt(age),
+          isWorking,
+          position:             posAr,
+          previousEmployers:    parseInt(previousEmployers),
+          yearsAtLastEmployer:  parseInt(yearsAtLastEmployer),
+        }),
       })
       const json = await res.json()
       if (json.error) throw new Error(json.error)
-      setAiQuestions(json.questions)
-      setAnswers(Array(json.questions.length).fill(0))
+
+      setAxes(json.axes)
+      setStageInfo({ stage: json.stage, stageAr: json.stageAr, reasoning: json.reasoning })
+      setAnswers(Array(json.axes.reduce((s: number, ax: Axis) => s + ax.questions.length, 0)).fill(0))
       setStep('questions')
     } catch (e: any) {
       setError(e.message)
@@ -74,16 +99,18 @@ export function AssessmentClient() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          firstName: firstName || null,
-          lastName:  lastName  || null,
-          email:     email     || null,
-          phone:     phone     || null,
-          age:             parseInt(age),
-          yearsExperience: parseInt(yearsExperience),
-          position: posAr,
-          questions: aiQuestions,
+          firstName:         firstName || null,
+          lastName:          lastName  || null,
+          email:             email     || null,
+          phone:             phone     || null,
+          age:               parseInt(age),
+          isWorking,
+          previousEmployers: parseInt(previousEmployers),
+          yearsExperience:   parseInt(yearsAtLastEmployer),
+          position:          posAr,
+          questions:         flatQuestions,
           answers,
-          language: lang,
+          language:          lang,
         }),
       })
       const json = await res.json()
@@ -121,6 +148,7 @@ export function AssessmentClient() {
                 <h2>{isAr ? 'البيانات الأساسية' : 'Basic Information'}</h2>
                 <p className="section-hint">{isAr ? 'الحقول المعلّمة بـ (*) إلزامية' : 'Fields marked (*) are required'}</p>
 
+                {/* Optional fields */}
                 <div className="form-grid">
                   <div className="form-field">
                     <label>{isAr ? 'الاسم' : 'First Name'}</label>
@@ -131,24 +159,52 @@ export function AssessmentClient() {
                     <input value={lastName} onChange={e => setLastName(e.target.value)} placeholder={isAr ? 'اختياري' : 'Optional'} />
                   </div>
                   <div className="form-field">
-                    <label>{isAr ? 'البريد الإلكتروني' : 'Email'}</label>
-                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={isAr ? 'اختياري' : 'Optional'} />
-                  </div>
-                  <div className="form-field">
                     <label>{isAr ? 'رقم الهاتف' : 'Phone'}</label>
                     <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder={isAr ? 'اختياري' : 'Optional'} />
                   </div>
+                  <div className="form-field">
+                    <label>{isAr ? 'البريد الإلكتروني' : 'Email'}</label>
+                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={isAr ? 'اختياري' : 'Optional'} />
+                  </div>
+                </div>
+
+                {/* Required numeric fields */}
+                <div className="form-grid" style={{ marginTop: '16px' }}>
                   <div className="form-field">
                     <label>{isAr ? 'العمر *' : 'Age *'}</label>
                     <input type="number" min="15" max="80" value={age} onChange={e => setAge(e.target.value)} placeholder={isAr ? 'مثال: 28' : 'e.g. 28'} />
                   </div>
                   <div className="form-field">
-                    <label>{isAr ? 'سنوات الخبرة *' : 'Years of Experience *'}</label>
-                    <input type="number" min="0" max="50" value={yearsExperience} onChange={e => setYearsExp(e.target.value)} placeholder={isAr ? 'مثال: 5' : 'e.g. 5'} />
+                    <label>{isAr ? 'عدد الجهات السابقة *' : 'Previous Employers *'}</label>
+                    <input type="number" min="0" max="30" value={previousEmployers} onChange={e => setPrevEmployers(e.target.value)} placeholder={isAr ? 'مثال: 2' : 'e.g. 2'} />
+                  </div>
+                  <div className="form-field">
+                    <label>{isAr ? 'سنوات العمل في آخر جهة *' : 'Years at Last Employer *'}</label>
+                    <input type="number" min="0" max="50" value={yearsAtLastEmployer} onChange={e => setYearsAtLast(e.target.value)} placeholder={isAr ? 'مثال: 3' : 'e.g. 3'} />
                   </div>
                 </div>
 
-                <div className="form-field full-width">
+                {/* Working status */}
+                <div className="form-field full-width" style={{ marginTop: '16px' }}>
+                  <label>{isAr ? 'هل تعمل حالياً؟ *' : 'Are you currently employed? *'}</label>
+                  <div className="toggle-row">
+                    <button
+                      onClick={() => setIsWorking(true)}
+                      className={`toggle-btn ${isWorking === true ? 'selected' : ''}`}
+                    >
+                      {isAr ? 'نعم، أعمل' : 'Yes, employed'}
+                    </button>
+                    <button
+                      onClick={() => setIsWorking(false)}
+                      className={`toggle-btn ${isWorking === false ? 'selected' : ''}`}
+                    >
+                      {isAr ? 'لا، لا أعمل' : 'No, not employed'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Position grid */}
+                <div className="form-field full-width" style={{ marginTop: '16px' }}>
                   <label>{isAr ? 'المنصب الحالي *' : 'Current Position *'}</label>
                   <div className="position-grid">
                     {positions.map((pos, i) => (
@@ -186,46 +242,55 @@ export function AssessmentClient() {
 
               {/* Progress */}
               <div className="progress-bar-wrap">
-                <div className="progress-bar-inner" style={{ width: `${(answers.filter(a => a > 0).length / aiQuestions.length) * 100}%` }} />
+                <div className="progress-bar-inner" style={{ width: `${(answeredCount / totalQuestions) * 100}%` }} />
               </div>
               <p className="progress-label">
-                {answers.filter(a => a > 0).length} / {aiQuestions.length} {isAr ? 'سؤال' : 'questions'}
+                {answeredCount} / {totalQuestions} {isAr ? 'سؤال' : 'questions'}
               </p>
 
-              <div className="assessment-card instructions">
-                <p>
-                  {isAr
-                    ? '✨ هذه الأسئلة وُلّدت خصيصاً لملفك الشخصي. قيّم مدى موافقتك على كل عبارة من 1 إلى 5.'
-                    : '✨ These questions were generated specifically for your profile. Rate your agreement from 1 to 5.'}
-                </p>
-              </div>
+              {/* Detected stage banner */}
+              {stageInfo && (
+                <div className="stage-banner">
+                  <div className="stage-banner-label">{isAr ? 'المرحلة المقترحة' : 'Suggested Stage'}</div>
+                  <div className="stage-banner-name">{stageInfo.stageAr} — {stageInfo.stage}</div>
+                  <div className="stage-banner-reason">{stageInfo.reasoning}</div>
+                </div>
+              )}
 
-              <div className="assessment-card section-card">
-                <h3 className="section-title">
-                  <span className="section-number">?</span>
-                  {isAr ? 'أسئلة التقييم المخصصة' : 'Personalized Assessment Questions'}
-                </h3>
-
-                {aiQuestions.map((q, idx) => (
-                  <div key={q.id} id={`q-${idx}`} className="question-item">
-                    <p className="question-text">
-                      <span className="q-num">{idx + 1}.</span>
-                      {q.text}
-                    </p>
-                    <div className="likert-scale">
-                      {[1, 2, 3, 4, 5].map(val => (
-                        <button key={val}
-                          onClick={() => setAnswers(prev => { const n = [...prev]; n[idx] = val; return n })}
-                          className={`likert-btn ${answers[idx] === val ? 'selected' : ''}`}
-                          title={likert[val - 1]}>
-                          <span className="likert-val">{val}</span>
-                          <span className="likert-label">{likert[val - 1]}</span>
-                        </button>
-                      ))}
-                    </div>
+              {/* Axes */}
+              {axes.map((axis, axIdx) => {
+                const axisOffset = axes.slice(0, axIdx).reduce((s, a) => s + a.questions.length, 0)
+                return (
+                  <div key={axis.id} className="assessment-card section-card" style={{ marginTop: '16px' }}>
+                    <h3 className="section-title">
+                      <span className="section-number">{axIdx + 1}</span>
+                      {axis.title}
+                    </h3>
+                    {axis.questions.map((q, qi) => {
+                      const globalIdx = axisOffset + qi
+                      return (
+                        <div key={q.id} id={`q-${globalIdx}`} className="question-item">
+                          <p className="question-text">
+                            <span className="q-num">{globalIdx + 1}.</span>
+                            {q.text}
+                          </p>
+                          <div className="likert-scale">
+                            {[1, 2, 3, 4, 5].map(val => (
+                              <button key={val}
+                                onClick={() => setAnswers(prev => { const n = [...prev]; n[globalIdx] = val; return n })}
+                                className={`likert-btn ${answers[globalIdx] === val ? 'selected' : ''}`}
+                                title={likert[val - 1]}>
+                                <span className="likert-val">{val}</span>
+                                <span className="likert-label">{likert[val - 1]}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
-                ))}
-              </div>
+                )
+              })}
 
               {error && <p className="error-msg">{error}</p>}
 
