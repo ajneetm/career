@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 
 import { useI18n } from '@/lib/i18n/I18nProvider';
-import { GlobeBg } from './GlobeBg';
 
 interface CareerStage {
   id: string;
@@ -32,8 +31,6 @@ export function HomePageClient() {
 
       {/* ── Hero ── */}
       <div className="hero-top">
-        <GlobeBg />
-
         {/* Content side */}
         <div className="hero-content">
           <motion.div
@@ -55,20 +52,38 @@ export function HomePageClient() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            <Link href="/assessment" className="btn-join-us">{home.cpdBtn}</Link>
+            <div className="hero-actions">
+              <Link href="/interests" className="btn-join-us">{home.discoverInterests}</Link>
+              <Link href="#" className="btn-join-us">{home.careerPosition}</Link>
+              <Link href="#" className="btn-join-us">{home.futurePath}</Link>
+            </div>
           </motion.div>
         </div>
 
-        {/* CPD logo side */}
+        {/* Partners side */}
         <div className="hero-cpd">
-          <motion.img
-            src="/cpd-logo.png"
-            alt="CPD Certified"
-            className="cpd-logo"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1, y: [0, -10, 0] }}
-            transition={{ opacity: { duration: 0.6 }, scale: { duration: 0.6 }, y: { delay: 0.8, duration: 3.5, repeat: Infinity, ease: 'easeInOut' } }}
-          />
+          <motion.div
+            className="partners-row"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <a href="https://www.loidabritish.com/" className="partner-item" target="_blank" rel="noopener noreferrer">
+              <img src="/LOIDA.png" alt="LOIDA" className="partner-logo" />
+              <span className="partner-label">{home.partnerDistributor}</span>
+            </a>
+            <div className="partner-divider" />
+            <a href="https://www.ajnee.com/" className="partner-item" target="_blank" rel="noopener noreferrer">
+              <img src="/AJNEE.png" alt="AJNEE" className="partner-logo" />
+              <span className="partner-label">{home.partnerInnovator}</span>
+            </a>
+            <div className="partner-divider" />
+            <a href="https://www.cpduk.co.uk/courses/loida-british-ajnee-career-pathway-model" className="partner-item" target="_blank" rel="noopener noreferrer">
+              <img src="/CPD.png" alt="CPD" className="partner-logo" />
+              <span className="partner-label">{home.partnerAccredited}</span>
+            </a>
+          </motion.div>
+
           <motion.div
             className="cpd-tagline-row"
             initial={{ opacity: 0, y: 10 }}

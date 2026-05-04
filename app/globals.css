@@ -84,10 +84,22 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
     gap: 0;
     width: 100%;
     margin: 0;
-    background: white;
     position: relative;
     overflow: hidden;
 }
+/* World Map Background */
+.world-map-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+.world-map-svg {
+    width: 100%;
+    height: 100%;
+}
+
 .globe-bg {
     position: absolute;
     top: 50%;
@@ -99,9 +111,9 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
     z-index: 0;
 }
 
-/* CPD logo side */
+/* Partners side */
 .hero-cpd {
-    flex: 0 0 50%;
+    flex: 0 0 35%;
     display: flex;
     position: relative;
     z-index: 1;
@@ -112,10 +124,12 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
     padding: 40px 48px;
     border-inline-start: 1px solid #e2e8f0;
 }
-.cpd-logo {
-    height: 200px;
-    object-fit: contain;
-    filter: drop-shadow(0 8px 24px rgba(30,95,220,0.12));
+.partners-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
 }
 .cpd-tagline-row {
     display: flex;
@@ -152,7 +166,7 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
 
 /* Content side */
 .hero-content {
-    flex: 0 0 50%;
+    flex: 0 0 65%;
     display: flex;
     position: relative;
     z-index: 1;
@@ -180,8 +194,8 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
     flex-shrink: 0;
 }
 .hero-tagline {
-    font-size: clamp(1.35rem, 2.2vw, 1.9rem);
-    font-weight: 800;
+    font-size: clamp(2.4rem, 3.8vw, 3.6rem);
+    font-weight: 400;
     color: #0f172a;
     line-height: 1.35;
     text-align: start;
@@ -196,6 +210,12 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
     margin: 0;
     text-align: start;
 }
+.hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
 .hero-bottom-row {
     border-top: 1.5px solid #e2e8f0;
     padding-top: 20px;
@@ -233,6 +253,45 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
 .btn-hero-secondary:hover { border-color: #1e40af; color: #1e40af; background: #eff6ff; }
 
 .hero-divider { display: none; }
+
+/* ── Partners Bar ── */
+.partners-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-bottom: 1px solid #e2e8f0;
+}
+.partner-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 18px 48px;
+    text-decoration: none;
+    transition: opacity 0.2s, background 0.2s;
+}
+.partner-item:hover { opacity: 0.7; background: #f8fafc; }
+.partner-logo {
+    height: 52px;
+    object-fit: contain;
+}
+.partner-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #64748b;
+    letter-spacing: 0.4px;
+}
+.partner-divider {
+    width: 1px;
+    height: 52px;
+    background: #e2e8f0;
+    flex-shrink: 0;
+}
+@media (max-width: 600px) {
+    .partner-item { padding: 14px 24px; }
+    .partner-logo { height: 38px; }
+}
 
 /* Home Intro */
 .home-intro {

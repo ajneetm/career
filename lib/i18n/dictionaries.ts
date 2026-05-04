@@ -18,6 +18,12 @@ export const dictionaries: Record<
       cpdBtn: string;
       cpdTagline: string;
       joinUs: string;
+      discoverInterests: string;
+      careerPosition: string;
+      futurePath: string;
+      partnerDistributor: string;
+      partnerInnovator: string;
+      partnerAccredited: string;
     };
     about: {
       title: string;
@@ -98,6 +104,12 @@ export const dictionaries: Record<
       cpdBtn: 'Where are you in your career path?',
       cpdTagline: 'Join the workshop to define your career path — from Choice to Esteem — CPD Certified',
       joinUs: 'Join Us',
+      discoverInterests: 'Discover Your Interests',
+      careerPosition: 'Your Professional Position Today',
+      futurePath: 'Define Your Future Path',
+      partnerDistributor: 'Distributor',
+      partnerInnovator: 'Innovator',
+      partnerAccredited: 'Accredited',
     },
     about: {
       title: 'About Us',
@@ -181,6 +193,12 @@ export const dictionaries: Record<
       cpdBtn: 'أين أنت من مسارك المهني؟',
       cpdTagline: 'انضم إلى ورشة العمل لتحديد مسارك المهني من الاختيار إلى المكانة .. شهادة معتمدة من CPD',
       joinUs: 'انضم إلينا',
+      discoverInterests: 'اكتشف ميولك',
+      careerPosition: 'موقعك المهني اليوم',
+      futurePath: 'حدد مسارك المستقبلي',
+      partnerDistributor: 'الموزع',
+      partnerInnovator: 'المبتكر',
+      partnerAccredited: 'المعتمد',
     },
     about: {
       title: 'من نحن',
