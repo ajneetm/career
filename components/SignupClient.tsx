@@ -24,20 +24,34 @@ export function SignupClient() {
 
     setLoading(true)
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { name, role: 'user' } },
     })
 
     if (error) {
-      setError(error.message === 'User already registered' ? 'هذا البريد مسجّل مسبقاً' : 'حدث خطأ، حاول مرة أخرى')
+      if (error.message.includes('already registered') || error.message.includes('already been registered'))
+        setError('هذا البريد مسجّل مسبقاً، سجّل دخولك')
+      else if (error.message.includes('rate limit') || error.message.includes('Email rate'))
+        setError('طلبات كثيرة، انتظر دقيقة وحاول مجدداً')
+      else
+        setError(`حدث خطأ: ${error.message}`)
       setLoading(false)
       return
     }
 
-    router.push('/user')
-    router.refresh()
+    // session is null when email confirmation is required
+    if (!data.session) {
+      setLoading(false)
+      setError('') // clear error
+      // show confirmation message instead
+      alert('تم إنشاء الحساب! تحقق من بريدك الإلكتروني وأكّد حسابك ثم سجّل دخولك.')
+      router.push('/login')
+      return
+    }
+
+    window.location.href = '/user'
   }
 
   return (
