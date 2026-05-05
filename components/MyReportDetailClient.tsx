@@ -23,13 +23,37 @@ const TYPE_LABEL: Record<string, { ar: string; en: string; color: string }> = {
   career: { ar: 'المسار المهني',   en: 'Career Path',      color: '#16a34a' },
 }
 
-const RIASEC_INFO: Record<string, { ar: string; color: string }> = {
-  R: { ar: 'واقعي',   color: '#f59e0b' },
-  I: { ar: 'بحثي',    color: '#3b82f6' },
-  A: { ar: 'إبداعي',  color: '#8b5cf6' },
-  S: { ar: 'اجتماعي', color: '#10b981' },
-  E: { ar: 'قيادي',   color: '#ef4444' },
-  C: { ar: 'تقليدي',  color: '#64748b' },
+const RIASEC_INFO: Record<string, { ar: string; color: string; icon: string; desc: string; careers: string[] }> = {
+  R: {
+    ar: 'واقعي', color: '#f59e0b', icon: '🔧',
+    desc: 'تميل لأعمال يدوية وعملية تتطلب مهارة جسدية وتقنية. تحب العمل مع الأدوات والآلات والطبيعة.',
+    careers: ['مهندس ميكانيكي', 'فني صيانة صناعية', 'مهندس كهربائي', 'مفتش جودة', 'مهندس مدني'],
+  },
+  I: {
+    ar: 'بحثي', color: '#3b82f6', icon: '🔬',
+    desc: 'تتميز بالتحليل والتفكير النقدي. تحب البحث والاستكشاف والإجابة على أسئلة معقدة بمنهجية علمية.',
+    careers: ['عالم بيانات', 'باحث علمي', 'محلل مالي', 'طبيب / صيدلاني', 'مطور برمجيات'],
+  },
+  A: {
+    ar: 'إبداعي', color: '#8b5cf6', icon: '🎨',
+    desc: 'تعبّر عن نفسك بأسلوب مبتكر. تفضل البيئات المرنة التي تتيح لك الابتكار والتعبير الحر.',
+    careers: ['مصمم جرافيك', 'كاتب محتوى إبداعي', 'مصور فوتوغرافي', 'منتج وسائط', 'مصمم تجربة مستخدم'],
+  },
+  S: {
+    ar: 'اجتماعي', color: '#10b981', icon: '🤝',
+    desc: 'تحب التواصل مع الناس ومساعدتهم. تمتلك مهارات عالية في التواصل والتعاطف والإرشاد.',
+    careers: ['معلم / مدرب', 'أخصائي اجتماعي', 'مستشار نفسي', 'مسؤول موارد بشرية', 'منسق مجتمعي'],
+  },
+  E: {
+    ar: 'قيادي', color: '#ef4444', icon: '🚀',
+    desc: 'تتمتع بروح قيادية وقدرة على الإقناع. تحب المبادرة وإدارة الفرق وتحقيق الأهداف.',
+    careers: ['رائد أعمال', 'مدير مشاريع', 'مدير تسويق', 'مندوب مبيعات متقدم', 'محامي'],
+  },
+  C: {
+    ar: 'تقليدي', color: '#64748b', icon: '📊',
+    desc: 'تتميز بالدقة والتنظيم والاهتمام بالتفاصيل. تعمل بشكل ممتاز في البيئات المنظمة ذات الإجراءات الواضحة.',
+    careers: ['محاسب قانوني', 'مراجع مالي', 'محلل بيانات', 'مسؤول إداري', 'مدير عمليات'],
+  },
 }
 
 export function MyReportDetailClient({ id }: { id: string }) {
@@ -89,75 +113,114 @@ export function MyReportDetailClient({ id }: { id: string }) {
 
       {/* Title card */}
       <div className="assessment-card" style={{ borderRight: `4px solid ${type?.color ?? '#1e5fdc'}`, padding: '24px 20px', marginBottom: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <div style={{ fontSize: '0.72rem', fontWeight: 600, color: type?.color, letterSpacing: 1, textTransform: 'uppercase' }}>
-              {isAr ? type?.ar : type?.en}
-            </div>
-            <h1 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', margin: '6px 0 4px' }}>
-              {report.name ?? report.email}
-            </h1>
-            <p style={{ fontSize: '0.78rem', color: '#64748b', margin: 0 }}>
-              {new Date(report.created_at).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-            </p>
+        <div>
+          <div style={{ fontSize: '0.72rem', fontWeight: 600, color: type?.color, letterSpacing: 1, textTransform: 'uppercase' }}>
+            {isAr ? type?.ar : type?.en}
           </div>
-          {report.total_score != null && (
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: type?.color, lineHeight: 1 }}>
-                {Math.round(report.total_score)}%
-              </div>
-              <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 2 }}>{isAr ? 'النتيجة الكلية' : 'Overall Score'}</div>
-            </div>
-          )}
+          <h1 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', margin: '6px 0 4px' }}>
+            {report.name ?? report.email}
+          </h1>
+          <p style={{ fontSize: '0.78rem', color: '#64748b', margin: 0 }}>
+            {new Date(report.created_at).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+          </p>
         </div>
-
-        {report.total_score != null && (
-          <div style={{ background: '#f1f5f9', borderRadius: 99, height: 8, overflow: 'hidden', marginTop: 16 }}>
-            <div style={{ width: `${report.total_score}%`, height: '100%', background: type?.color, borderRadius: 99 }} />
-          </div>
-        )}
       </div>
 
-      {/* RIASEC code + scores */}
-      {isRiasec && scores && (
-        <>
-          {code && (
-            <div className="assessment-card" style={{ marginBottom: 16, textAlign: 'center', background: '#eff6ff', borderColor: '#bfdbfe' }}>
-              <div style={{ fontSize: '0.78rem', color: '#1e40af', fontWeight: 600, marginBottom: 6 }}>
-                {isAr ? 'كود الميول المهنية' : 'Interest Code'}
+      {/* RIASEC full report */}
+      {isRiasec && scores && (() => {
+        const ranked = riasecKeys
+          .map(k => ({ k, val: typeof scores[k] === 'number' ? (scores[k] as number) : 0 }))
+          .sort((a, b) => b.val - a.val)
+        const top3 = ranked.slice(0, 3)
+        return (
+          <>
+            {/* Code badge */}
+            {code && (
+              <div className="assessment-card" style={{ marginBottom: 20, textAlign: 'center', background: '#eff6ff', border: '1.5px solid #bfdbfe' }}>
+                <div style={{ fontSize: '0.75rem', color: '#1e40af', fontWeight: 600, marginBottom: 6, letterSpacing: 1 }}>
+                  كود شخصيتك المهنية
+                </div>
+                <div style={{ fontSize: '2.2rem', fontWeight: 900, letterSpacing: 8, color: '#1e5fdc', fontFamily: 'monospace' }}>{code}</div>
+                <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: 8 }}>
+                  {top3.map(({ k }) => RIASEC_INFO[k]?.ar).join(' · ')}
+                </div>
               </div>
-              <div style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: 6, color: '#1e5fdc' }}>{code}</div>
-              {jobs && <div style={{ fontSize: '0.84rem', color: '#475569', marginTop: 8 }}>{jobs}</div>}
-            </div>
-          )}
+            )}
 
-          <div className="assessment-card" style={{ marginBottom: 16 }}>
-            <h2 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1e293b', marginBottom: 16 }}>
-              {isAr ? 'تفاصيل الأبعاد' : 'Dimension Scores'}
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {riasecKeys.map(k => {
-                const raw = scores[k]
-                if (typeof raw !== 'number') return null
-                const pct = Math.round((raw / 20) * 100)
+            {/* Top 3 careers */}
+            <div style={{ marginBottom: 20 }}>
+              <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', marginBottom: 14 }}>
+                🏆 أفضل 3 مسارات مهنية لك
+              </h2>
+              {top3.map(({ k }, idx) => {
                 const info = RIASEC_INFO[k]
+                const pct = Math.round(((scores[k] as number) / 20) * 100)
+                const medals = ['🥇', '🥈', '🥉']
                 return (
-                  <div key={k}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: info.color }} />
-                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b', flex: 1 }}>{info.ar}</span>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: info.color }}>{pct}%</span>
+                  <div key={k} className="assessment-card" style={{
+                    marginBottom: 14, border: `2px solid ${info.color}30`,
+                    background: `${info.color}06`, padding: '20px 20px',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                      <span style={{ fontSize: '1.6rem' }}>{medals[idx]}</span>
+                      <span style={{ fontSize: '1.5rem' }}>{info.icon}</span>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '1rem', color: info.color }}>
+                          الشخصية {info.ar}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 1 }}>نسبة التوافق: {pct}%</div>
+                      </div>
                     </div>
-                    <div style={{ background: '#f1f5f9', borderRadius: 99, height: 5, overflow: 'hidden' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', background: info.color, borderRadius: 99 }} />
+                    <p style={{ fontSize: '0.84rem', color: '#475569', marginBottom: 14, lineHeight: 1.7 }}>
+                      {info.desc}
+                    </p>
+                    <div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1e293b', marginBottom: 8, letterSpacing: 0.5 }}>
+                        المهن الأنسب لك:
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {info.careers.map(c => (
+                          <span key={c} style={{
+                            fontSize: '0.78rem', padding: '4px 12px', borderRadius: 99,
+                            background: `${info.color}18`, color: info.color, fontWeight: 600,
+                            border: `1px solid ${info.color}30`,
+                          }}>{c}</span>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )
               })}
             </div>
-          </div>
-        </>
-      )}
+
+            {/* All dimensions bar chart */}
+            <div className="assessment-card" style={{ marginBottom: 16 }}>
+              <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1e293b', marginBottom: 16 }}>
+                تفاصيل جميع الأبعاد
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {ranked.map(({ k }) => {
+                  const raw = scores[k] as number
+                  const pct = Math.round((raw / 20) * 100)
+                  const info = RIASEC_INFO[k]
+                  return (
+                    <div key={k}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: '1rem' }}>{info.icon}</span>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b', flex: 1 }}>{info.ar}</span>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: info.color }}>{pct}%</span>
+                      </div>
+                      <div style={{ background: '#f1f5f9', borderRadius: 99, height: 6, overflow: 'hidden' }}>
+                        <div style={{ width: `${pct}%`, height: '100%', background: info.color, borderRadius: 99 }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </>
+        )
+      })()}
 
       {/* AI Analysis placeholder */}
       {report.ai_analysis ? (
