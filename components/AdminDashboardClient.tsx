@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase/client'
 
 const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase())
 
-type AdminTab = 'overview' | 'surveys' | 'users' | 'workshops' | 'consultations' | 'evaluation' | 'projects'
+type AdminTab = 'overview' | 'surveys' | 'users' | 'workshops' | 'consultations' | 'evaluation'
 
 type Survey     = { id: string; name: string | null; email: string | null; survey_type: string; total_score: number | null; modal_scores: Record<string,unknown> | null; language: string; created_at: string }
 type SiteUser   = { id: string; email: string; created_at: string; user_metadata: { name?: string; phone?: string } }
@@ -16,8 +16,6 @@ type Enrollment = { id: string; workshop_id: string; user_id: string | null; use
 type Consult    = { id: string; user_email: string | null; user_name: string | null; subject: string; message: string; reply: string | null; status: string; created_at: string }
 type EvalSettings = { is_open: boolean }
 type WsEval     = { id: string; user_name: string | null; trainer_rating: number; interaction_rating: number; content_rating: number; facilities_rating: number; benefit_rating: number; comments: string | null; created_at: string }
-type Project    = { id: string; owner_id: string | null; owner_name: string | null; title: string; description: string | null; is_active: boolean; created_at: string }
-type ProjEval   = { id: string; project_id: string; person_name: string | null; purpose_rating: number; return_rating: number; obtainability_rating: number; design_rating: number; users_rating: number; competition_rating: number; timeline_rating: number; created_at: string }
 type StrangeProf = { id: string; workshop_id: string; name: string; code: string; is_active: boolean; strange_profession_votes: { id: string; avg_score: number }[] }
 
 const NAV: { key: AdminTab; label: string; icon: string }[] = [
@@ -27,7 +25,6 @@ const NAV: { key: AdminTab; label: string; icon: string }[] = [
   { key: 'workshops',     label: 'الدورات',         icon: '🎓' },
   { key: 'consultations', label: 'الاستشارات',      icon: '💬' },
   { key: 'evaluation',    label: 'تقييم الورشة',   icon: '📝' },
-  { key: 'projects',      label: 'المشاريع',        icon: '🗂️' },
 ]
 
 const TYPE_AR: Record<string, string> = { riasec: 'اكتشف ميولك', choice: 'جاهزية الاختيار', career: 'المسار المهني' }
@@ -60,12 +57,8 @@ export function AdminDashboardClient() {
   const [consults, setConsults]       = useState<Consult[]>([])
   const [evalSettings, setEvalSettings] = useState<EvalSettings>({ is_open: false })
   const [wsEvals, setWsEvals]         = useState<WsEval[]>([])
-  const [projects, setProjects]       = useState<Project[]>([])
-  const [projEvals, setProjEvals]     = useState<ProjEval[]>([])
-
   // ui state
   const [selectedWs, setSelectedWs]       = useState<Workshop | null>(null)
-  const [selectedProj, setSelectedProj]   = useState<Project | null>(null)
   const [replyingId, setReplyingId]       = useState<string | null>(null)
   const [replyText, setReplyText]         = useState('')
   const [confirmDel, setConfirmDel]       = useState<{ type: string; id: string; label: string } | null>(null)
@@ -111,8 +104,6 @@ export function AdminDashboardClient() {
     setConsults(data.consultations ?? [])
     setEvalSettings(data.evalSettings ?? { is_open: false })
     setWsEvals(data.wsEvals ?? [])
-    setProjects(data.projects ?? [])
-    setProjEvals(data.projEvals ?? [])
     setUsers(Array.isArray(usersData) ? usersData : [])
     setLoading(false)
   }, [])
@@ -195,7 +186,6 @@ export function AdminDashboardClient() {
                     { label: 'الدورات', value: workshops.length, color: '#16a34a' },
                     { label: 'الاستشارات', value: consults.length, color: '#f59e0b' },
                     { label: 'التقييمات', value: wsEvals.length, color: '#ef4444' },
-                    { label: 'المشاريع', value: projects.length, color: '#8b5cf6' },
                   ].map(s => (
                     <div key={s.label} style={{ background: 'white', borderRadius: 14, padding: '20px 18px', borderTop: `4px solid ${s.color}`, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
                       <div style={{ fontSize: '2rem', fontWeight: 800, color: s.color }}>{s.value}</div>
@@ -631,80 +621,6 @@ export function AdminDashboardClient() {
               </div>
             )}
 
-            {/* ── PROJECTS ── */}
-            {tab === 'projects' && (
-              <div style={{ display: 'flex', gap: 20 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <h2 style={styles.heading}>المشاريع ({projects.length})</h2>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {projects.map(p => {
-                      const evals = projEvals.filter(e => e.project_id === p.id)
-                      return (
-                        <div key={p.id} style={{ ...styles.card, cursor: 'pointer', borderRight: `3px solid ${selectedProj?.id === p.id ? '#1e5fdc' : p.is_active ? '#16a34a' : '#e2e8f0'}` }}
-                          onClick={() => setSelectedProj(selectedProj?.id === p.id ? null : p)}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                <span style={{ fontWeight: 600, fontSize: '0.92rem' }}>{p.title}</span>
-                                <span style={styles.badge(p.is_active ? '#16a34a' : '#94a3b8')}>{p.is_active ? 'نشط' : 'قيد المراجعة'}</span>
-                              </div>
-                              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{p.owner_name} · {evals.length} تقييم</div>
-                            </div>
-                            <div style={{ display: 'flex', gap: 6 }}>
-                              <button style={p.is_active ? styles.btnSecondary : styles.btnPrimary} onClick={async e => {
-                                e.stopPropagation()
-                                await adminFetch('/api/admin/projects', { method: 'PATCH', body: JSON.stringify({ id: p.id, is_active: !p.is_active }) })
-                                setProjects(ps => ps.map(x => x.id === p.id ? { ...x, is_active: !p.is_active } : x))
-                              }}>{p.is_active ? 'إيقاف' : 'تفعيل'}</button>
-                              <button style={styles.btnDanger} onClick={e => { e.stopPropagation(); setConfirmDel({ type: 'project', id: p.id, label: p.title }) }}>حذف</button>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                {selectedProj && (
-                  <div style={{ width: 380, flexShrink: 0 }}>
-                    <div style={{ ...styles.card, position: 'sticky', top: 28 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                        <div style={{ fontWeight: 700, color: '#0f172a' }}>{selectedProj.title}</div>
-                        <button onClick={() => setSelectedProj(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '1.2rem' }}>×</button>
-                      </div>
-                      {selectedProj.description && <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: 12 }}>{selectedProj.description}</p>}
-
-                      {/* QR code */}
-                      <div style={{ ...styles.cardTitle, marginBottom: 10 }}>رابط التقييم</div>
-                      <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12, textAlign: 'center', marginBottom: 16 }}>
-                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(typeof window !== 'undefined' ? `${window.location.origin}/evaluate/${selectedProj.id}` : '')}`}
-                          alt="QR" style={{ width: 160, height: 160 }} />
-                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 8, wordBreak: 'break-all' }}>
-                          /evaluate/{selectedProj.id}
-                        </div>
-                        <button style={{ ...styles.btnSecondary, marginTop: 8, fontSize: '0.78rem' }} onClick={() => navigator.clipboard.writeText(`${window.location.origin}/evaluate/${selectedProj.id}`)}>
-                          نسخ الرابط
-                        </button>
-                      </div>
-
-                      {/* Evaluations */}
-                      <div style={styles.cardTitle}>التقييمات ({projEvals.filter(e => e.project_id === selectedProj.id).length})</div>
-                      {projEvals.filter(e => e.project_id === selectedProj.id).map(e => {
-                        const total = e.purpose_rating + e.return_rating + e.obtainability_rating + e.design_rating + e.users_rating + e.competition_rating + e.timeline_rating
-                        return (
-                          <div key={e.id} style={{ padding: '8px 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.82rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <span style={{ color: '#334155' }}>{e.person_name ?? '—'}</span>
-                              <span style={{ fontWeight: 700, color: '#1e5fdc' }}>{total}/70</span>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </>
         )}
       </main>

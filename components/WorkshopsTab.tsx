@@ -24,7 +24,7 @@ type Material = {
   sort_order: number
 }
 
-type WsTab = 'materials' | 'projects' | 'evaluation'
+type WsTab = 'materials' | 'evaluation'
 
 const CONTENT_ICON: Record<string, string> = {
   file: '📄', video: '🎬', link: '🔗', quiz: '📝',
@@ -101,8 +101,7 @@ export function WorkshopsTab({ user }: { user: User }) {
   if (selected) {
     const isEnrolled = enrolledIds.has(selected.id)
     const WS_TABS: { key: WsTab; label: string }[] = [
-      { key: 'materials', label: '📄 المواد' },
-      { key: 'projects',  label: '🗂️ المشاريع' },
+      { key: 'materials',  label: '📄 المواد' },
       { key: 'evaluation', label: '⭐ التقييم' },
     ]
     return (
@@ -166,19 +165,6 @@ export function WorkshopsTab({ user }: { user: User }) {
               </div>
             )}
 
-            {/* Projects */}
-            {wsTab === 'projects' && (
-              <div className="assessment-card" style={{ textAlign: 'center', padding: 32 }}>
-                <div style={{ fontSize: '2rem', marginBottom: 12 }}>🗂️</div>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1e293b', marginBottom: 8 }}>تقييم المشاريع</h3>
-                <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: 20 }}>
-                  سجّل مشروعك أو شاهد حالته هنا
-                </p>
-                <Link href="/projects" className="btn-primary" style={{ fontSize: '0.85rem' }}>
-                  انتقل لصفحة المشاريع
-                </Link>
-              </div>
-            )}
 
             {/* Evaluation */}
             {wsTab === 'evaluation' && (
