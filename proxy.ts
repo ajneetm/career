@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 
 const PUBLIC_PATHS = ['/', '/login', '/signup', '/about', '/workshops', '/assessment', '/interests', '/career']
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   // Allow public paths and static files
