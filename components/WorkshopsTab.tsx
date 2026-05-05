@@ -127,16 +127,22 @@ export function WorkshopsTab({ user }: { user: User }) {
         ) : (
           <>
             {/* mini-tabs */}
-            <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '1px solid #e2e8f0', paddingBottom: 0 }}>
-              {WS_TABS.map(({ key, label }) => (
-                <button key={key} onClick={() => setWsTab(key)}
-                  style={{ padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer',
-                    borderBottom: `2px solid ${wsTab === key ? '#1e5fdc' : 'transparent'}`,
-                    color: wsTab === key ? '#1e5fdc' : '#64748b', fontWeight: wsTab === key ? 600 : 400,
-                    fontSize: '0.88rem', marginBottom: -1 }}>
-                  {label}
-                </button>
-              ))}
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20, borderBottom: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', gap: 4, flex: 1 }}>
+                {WS_TABS.map(({ key, label }) => (
+                  <button key={key} onClick={() => setWsTab(key)}
+                    style={{ padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer',
+                      borderBottom: `2px solid ${wsTab === key ? '#1e5fdc' : 'transparent'}`,
+                      color: wsTab === key ? '#1e5fdc' : '#64748b', fontWeight: wsTab === key ? 600 : 400,
+                      fontSize: '0.88rem', marginBottom: -1 }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <a href="/strange/results" target="_blank" rel="noopener noreferrer"
+                style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1e5fdc', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '5px 10px', textDecoration: 'none', marginBottom: 4, flexShrink: 0 }}>
+                🏆 نتائج المهن
+              </a>
             </div>
 
             {/* Materials */}
