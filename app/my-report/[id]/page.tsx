@@ -1,4 +1,6 @@
 import { MyReportDetailClient } from '@/components/MyReportDetailClient'
-export default function MyReportPage({ params }: { params: { id: string } }) {
-  return <MyReportDetailClient id={params.id} />
+
+export default async function MyReportPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return <MyReportDetailClient id={id} />
 }
