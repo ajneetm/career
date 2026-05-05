@@ -141,7 +141,7 @@ export function UserDashboardClient() {
           </div>
         </nav>
 
-        <button onClick={logout} style={{ margin: '0 16px 16px', padding: '10px', background: '#1e293b', color: '#64748b', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: '0.82rem' }}>
+        <button onClick={logout} style={{ margin: '0 16px 16px', padding: '10px', background: '#7f1d1d', color: '#fca5a5', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>
           تسجيل الخروج
         </button>
       </aside>

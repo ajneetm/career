@@ -166,8 +166,8 @@ export function AdminDashboardClient() {
           ))}
         </nav>
         <button onClick={() => { supabase.auth.signOut(); window.location.href = '/' }}
-          style={{ margin: '0 12px 16px', padding: '8px', background: '#1e293b', color: '#64748b', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: '0.8rem' }}>
-          خروج
+          style={{ margin: '0 12px 16px', padding: '10px', background: '#7f1d1d', color: '#fca5a5', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>
+          تسجيل الخروج
         </button>
       </aside>
 
