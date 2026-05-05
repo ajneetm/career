@@ -460,7 +460,13 @@ export function AdminDashboardClient() {
                       {/* Strange Professions panel */}
                       {wsPanel === 'strange' && (
                         <>
-                          <div style={styles.cardTitle}>المهن الغريبة 🎭</div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                            <div style={styles.cardTitle}>المهن الغريبة 🎭</div>
+                            <a href="/strange/results" target="_blank" rel="noopener noreferrer"
+                              style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e5fdc', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '5px 12px', textDecoration: 'none' }}>
+                              🏆 عرض النتائج
+                            </a>
+                          </div>
 
                           {/* Sorted by avg score */}
                           {[...strangeProfessions]
