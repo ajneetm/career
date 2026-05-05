@@ -257,8 +257,8 @@ export function UserDashboardClient() {
   // ── Mobile ──────────────────────────────────────────────────────────────────
   if (isMobile) {
     return (
-      <div dir="rtl" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#f8fafc' }}>
-        <main style={{ flex: 1, padding: '20px 16px 80px' }}>
+      <div dir="rtl" style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#f8fafc' }}>
+        <main style={{ flex: 1, overflowY: 'auto', padding: '20px 16px 84px' }}>
           <TabContent />
         </main>
 
@@ -283,10 +283,10 @@ export function UserDashboardClient() {
 
   // ── Desktop ─────────────────────────────────────────────────────────────────
   return (
-    <div dir="rtl" style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#f8fafc' }}>
+    <div dir="rtl" style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: '#f8fafc' }}>
 
       {/* Sidebar */}
-      <aside style={{ width: 240, background: '#0f172a', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', flexShrink: 0 }}>
+      <aside style={{ width: 240, background: '#0f172a', display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', flexShrink: 0 }}>
 
         {/* Avatar header */}
         <div style={{ padding: '28px 20px 20px', borderBottom: '1px solid #1e293b', flexShrink: 0 }}>
