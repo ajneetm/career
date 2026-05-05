@@ -503,8 +503,15 @@ export function AdminDashboardClient() {
                                     </div>
                                   </div>
                                   {/* QR */}
-                                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(link)}`}
-                                    alt="QR" style={{ width: 80, height: 80, marginTop: 8, borderRadius: 8 }} />
+                                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginTop: 8 }}>
+                                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`}
+                                      alt="QR" style={{ width: 80, height: 80, borderRadius: 8 }} />
+                                    <a href={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(link)}`}
+                                      download={`qr-${p.code}.png`} target="_blank" rel="noopener noreferrer"
+                                      style={{ ...styles.btnSecondary, fontSize: '0.72rem', padding: '4px 8px', textDecoration: 'none', display: 'inline-block' }}>
+                                      ⬇ تحميل
+                                    </a>
+                                  </div>
 
                                   {/* Votes list */}
                                   {votes.length > 0 && (
