@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 
-type Project = { id: string; title: string; description: string | null }
+type Project = { id: string; owner_id: string | null; title: string; description: string | null }
 
 const PRODUCT_CRITERIA = [
   { key: 'purpose',       label: 'P — الهدف',              desc: 'هل المشروع يحل مشكلة حقيقية؟' },
@@ -52,7 +52,7 @@ export function ProjectEvalClient({ id }: { id: string }) {
       setUser(auth.user)
 
       const { data: proj, error } = await supabase
-        .from('projects').select('id, title, description').eq('id', id).eq('is_active', true).maybeSingle()
+        .from('projects').select('id, owner_id, title, description').eq('id', id).eq('is_active', true).maybeSingle()
 
       if (error || !proj) { setNotFound(true); setLoading(false); return }
       setProject(proj)
