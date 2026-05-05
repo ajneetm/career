@@ -1,4 +1,5 @@
 import { StrangeProfessionClient } from '@/components/StrangeProfessionClient'
-export default function StrangePage({ params }: { params: { code: string } }) {
-  return <StrangeProfessionClient code={params.code} />
+export default async function StrangePage({ params }: { params: Promise<{ code: string }> }) {
+  const { code } = await params
+  return <StrangeProfessionClient code={code} />
 }
