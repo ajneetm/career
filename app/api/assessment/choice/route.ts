@@ -27,7 +27,8 @@ async function callGemini(prompt: string): Promise<string> {
 
 export async function POST(req: NextRequest) {
   try {
-    const { axisScores, total } = await req.json()
+    const { axisScores, total, language } = await req.json()
+    const isEn = language === 'en'
 
     // axisScores: [{title, score, max:20}, ...], total: number (max 120)
 
@@ -35,7 +36,23 @@ export async function POST(req: NextRequest) {
       .map((a: { title: string; score: number }) => `- ${a.title}: ${a.score}/20`)
       .join('\n')
 
-    const prompt = `أنت مرشد مهني خبير. قام شخص بإجراء استبيان تشخيص مرحلة الاختيار المهني.
+    const prompt = isEn
+      ? `You are an expert career coach. A person has completed a career readiness assessment.
+
+Assessment results:
+${scoresText}
+Total score: ${total}/120
+
+Score interpretation per axis: 16-20 = Clear strength, 11-15 = Good, needs support, 6-10 = Gap needing attention, 4-5 = Critical weakness.
+Overall score interpretation: 96-120 = High readiness, 72-95 = Moderate, 48-71 = Insufficient, below 48 = Foundation building needed.
+
+Return JSON only in this exact format:
+{
+  "strengths": ["One short sentence per axis that scored 16 or above"],
+  "weaknesses": ["One short sentence per axis that scored below 16"],
+  "recommendation": "One personalized, human paragraph reflecting the full picture and motivating the person"
+}`
+      : `أنت مرشد مهني خبير. قام شخص بإجراء استبيان تشخيص مرحلة الاختيار المهني.
 
 نتائج الاستبيان:
 ${scoresText}

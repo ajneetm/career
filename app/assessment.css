@@ -288,6 +288,15 @@
   display: flex; align-items: center; justify-content: space-between;
 }
 .ca-desktop-steps { display: flex; gap: 10px; align-items: center; }
+/* Language toggle (inside desktop header) */
+.ca-lang-toggle {
+  background: rgba(255,255,255,0.1); color: white;
+  border: 1px solid rgba(255,255,255,0.25); border-radius: 8px;
+  padding: 6px 14px; font-size: 0.8rem; font-weight: 500;
+  cursor: pointer; transition: background 0.2s; white-space: nowrap;
+}
+.ca-lang-toggle:hover { background: rgba(255,255,255,0.2); }
+
 .ca-desktop-dot {
   width: 12px; height: 12px; border-radius: 50%; transition: all 0.25s; cursor: default;
   background: rgba(255,255,255,0.2);
