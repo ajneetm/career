@@ -147,29 +147,28 @@ export function InterestsClient() {
     const qs = Object.entries(params).map(([k,v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&')
     fetch(SCRIPT_URL + '?' + qs, { method: 'POST', mode: 'no-cors' }).catch(() => {})
 
-    // حفظ في Supabase
-    supabase.auth.getUser().then(({ data }) => {
+    // حفظ في Supabase ثم توجيه لـ /my-reports
+    supabase.auth.getUser().then(({ data: auth }) => {
       fetch('/api/surveys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_id: data.user?.id ?? null,
-          email: data.user?.email ?? null,
+          user_id: auth.user?.id ?? null,
+          email: auth.user?.email ?? name,
           name,
           survey_type: 'riasec',
-          total_score: null,
-          modal_scores: s,
+          total_score: Math.round((Object.values(s).reduce((a,b) => a+b, 0) / 120) * 100),
+          modal_scores: { ...s, code, jobs },
           language: lang,
         }),
-      }).catch(() => {})
+      }).then(() => {
+        setTimeout(() => { window.location.href = '/my-reports' }, 1600)
+      }).catch(() => {
+        setTimeout(() => {
+          setScores(s); setTopCode(code); setTopJobs(jobs); setPhase('results')
+        }, 1600)
+      })
     })
-
-    setTimeout(() => {
-      setScores(s)
-      setTopCode(code)
-      setTopJobs(jobs)
-      setPhase('results')
-    }, 1600)
   }
 
   // ── Radar data ───────────────────────────────────────────────────────────────
