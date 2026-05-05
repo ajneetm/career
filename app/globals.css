@@ -657,7 +657,7 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
     .career-container > div {
         flex: none !important;
         width: 100%;
-        height: 220px;
+        height: 440px;
     }
 
     .career-card {

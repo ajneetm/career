@@ -114,7 +114,7 @@ export function HomePageClient() {
             transition={{ duration: 0.5, ease: 'easeOut' }}
           >
             <Link
-              href={`/career/${stage.id}`}
+              href={`/workshops?category=${stage.id}`}
               className={`career-card card-${stage.id}`}
               style={{ textDecoration: 'none', height: '100%', display: 'flex', flexDirection: 'column' }}
             >

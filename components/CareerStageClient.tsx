@@ -100,20 +100,7 @@ export function CareerStageClient({ stageId }: { stageId: string }) {
             {labels.joinWorkshop}
           </button>
 
-          <button
-            className="submit-btn"
-            style={{
-              width: 'auto',
-              padding: '15px 35px',
-              fontWeight: 400,
-              background: 'transparent',
-              color: '#475569',
-              border: `2px solid ${current.color}`,
-              cursor: 'pointer',
-            }}
-          >
-            {labels.bookConsultation}
-          </button>
+          {/* bookConsultation hidden until ready */}
         </div>
       </div>
 

@@ -55,6 +55,13 @@ export default function WorkshopsPage() {
 
   const [remoteDtos, setRemoteDtos] = useState<SiteWorkshopDTO[] | null>(null);
   const [filter, setFilter] = useState('ALL');
+
+  // read ?category= from URL on mount
+  useEffect(() => {
+    const cat = new URLSearchParams(window.location.search).get('category')
+    const valid = ['choice','adapt','role','effective','esteem','retire']
+    if (cat && valid.includes(cat)) setFilter(cat)
+  }, []);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWorkshop, setSelectedWorkshop] = useState('');
   const [submitted, setSubmitted] = useState(false);
