@@ -25,10 +25,8 @@ export function LoginClient() {
       return
     }
 
-    // Admin check
     const isAdmin = data.user?.user_metadata?.role === 'admin'
-    router.push(isAdmin ? '/admin' : '/user')
-    router.refresh()
+    window.location.href = isAdmin ? '/admin' : '/user'
   }
 
   return (
