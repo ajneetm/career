@@ -28,10 +28,35 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
 }
 .nav-center-title h1 { font-size: 1.8rem; font-weight: 400; text-transform: uppercase; letter-spacing: -1px; }
 .logo img { height: 45px; }
-.hamburger { cursor: pointer; display: flex; flex-direction: column; gap: 5px; width: 45px; }
+.hamburger { cursor: pointer; display: flex; flex-direction: column; gap: 5px; }
 .hamburger span { display: block; width: 28px; height: 3px; background: var(--text-dark); border-radius: 3px; }
 
 .nav-spacer { height: 72px; }
+
+/* Nav icon buttons — large touch targets */
+.nav-icon-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; border-radius: 10px;
+    color: inherit; background: none; border: none;
+    cursor: pointer; font-size: 20px; text-decoration: none;
+    transition: background 0.15s;
+}
+.nav-icon-btn:hover { background: #f1f5f9; }
+
+/* Hamburger as button */
+.hamburger {
+    background: none; border: none; padding: 8px;
+    margin: -8px;
+}
+
+/* Sidebar backdrop */
+.sidebar-backdrop {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
+    animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
 
 /* Sidebar — inset-inline يجعل الانزلاق من جهة البداية (يمين في RTL، يسار في LTR) */
 .sidebar {
@@ -50,13 +75,19 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
 .sidebar.active { inset-inline-start: 0; }
 .close-menu {
     position: absolute;
-    top: 25px;
-    inset-inline-end: 24px;
+    top: 16px;
+    inset-inline-end: 16px;
     color: white;
     font-size: 2rem;
     cursor: pointer;
     line-height: 1;
+    background: none; border: none;
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    transition: background 0.15s;
 }
+.close-menu:hover { background: rgba(255,255,255,0.12); }
 .nav-links { list-style: none; padding: 0; margin: 0; }
 .nav-links li { margin-bottom: 24px; }
 .nav-links a { color: white; text-decoration: none; font-size: 1.35rem; font-weight: 400; transition: 0.3s; display: inline-block; }
@@ -553,7 +584,9 @@ body { background: var(--bg-white); color: var(--text-dark); overflow-x: hidden;
 /* ── Mobile ── */
 @media (max-width: 768px) {
 
-    .nav-center-title { display: none; }
+    .nav-center-title { display: block; }
+    .nav-center-title h1 { font-size: 0.85rem; letter-spacing: 0; }
+    .logo img { height: 32px; }
 
     /* scroll normally on mobile */
     .page-fill {

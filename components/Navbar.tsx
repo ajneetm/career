@@ -11,7 +11,9 @@ import { supabase } from '@/lib/supabase/client';
 
 export default function Navbar() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const toggleMenu = () => setIsSidebarOpen(!isSidebarOpen);
+  const openMenu  = () => setIsSidebarOpen(true);
+  const closeMenu = () => setIsSidebarOpen(false);
+  const toggleMenu = () => setIsSidebarOpen(v => !v);
   const { locale, t } = useI18n();
   const nav = t('nav');
   const [menuLinks, setMenuLinks] = useState<NavigationItemDTO[]>(fallbackNavigationItems);
@@ -42,29 +44,34 @@ export default function Navbar() {
   return (
     <>
       <nav className="navbar">
-        <div className="nav-left-section" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <div className="hamburger" onClick={toggleMenu}>
+        <div className="nav-left-section" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            className="hamburger"
+            onClick={toggleMenu}
+            aria-label="القائمة"
+            aria-expanded={isSidebarOpen}
+          >
             <span></span>
             <span></span>
             <span></span>
-          </div>
+          </button>
 
-          <div className="nav-icons" style={{ display: 'flex', gap: '12px', fontSize: '22px' }}>
+          <div className="nav-icons" style={{ display: 'flex', gap: '4px' }}>
             {loggedIn ? (
               <>
-                <Link href="/user" title="حسابي" style={{ color: 'inherit' }}>
+                <Link href="/user" title="حسابي" className="nav-icon-btn">
                   <FiUser />
                 </Link>
                 <button
                   title="تسجيل الخروج"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: '22px', padding: 0 }}
+                  className="nav-icon-btn"
                   onClick={async () => { await supabase.auth.signOut(); window.location.href = '/'; }}
                 >
                   <FiLogOut />
                 </button>
               </>
             ) : (
-              <Link href="/login" title={nav.login} style={{ color: 'inherit' }}>
+              <Link href="/login" title={nav.login} className="nav-icon-btn">
                 <FiLogIn />
               </Link>
             )}
@@ -72,18 +79,29 @@ export default function Navbar() {
         </div>
 
         <div className="nav-center-title">
-          <h1 style={{ fontWeight: 400 }}>CAREER FOR EVERYONE</h1>
+          <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <h1 style={{ fontWeight: 400 }}>CAREER FOR EVERYONE</h1>
+          </Link>
         </div>
 
-        <div className="logo">
+        <Link href="/" className="logo" aria-label="الرئيسية">
           <img src="/logo.png" alt="Logo" style={{ height: '40px' }} />
-        </div>
+        </Link>
       </nav>
 
+      {/* Backdrop — closes sidebar on outside tap */}
+      {isSidebarOpen && (
+        <div
+          className="sidebar-backdrop"
+          onClick={closeMenu}
+          aria-hidden="true"
+        />
+      )}
+
       <div className={`sidebar ${isSidebarOpen ? 'active' : ''}`}>
-        <span className="close-menu" onClick={toggleMenu}>
+        <button className="close-menu" onClick={closeMenu} aria-label="إغلاق القائمة">
           &times;
-        </span>
+        </button>
 
         <div className="sidebar-lang">
           <LanguageSwitcher variant="dark" />
@@ -92,7 +110,7 @@ export default function Navbar() {
         <ul className="nav-links">
           {menuLinks.map((item, index) => (
             <li key={`${item.href}-${index}`}>
-              <Link href={item.href} onClick={toggleMenu}>
+              <Link href={item.href} onClick={closeMenu}>
                 {linkLabel(item)}
               </Link>
             </li>
