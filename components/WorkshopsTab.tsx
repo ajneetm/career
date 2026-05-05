@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
+import { WorkshopAssessmentTab } from './WorkshopAssessmentTab'
 
 type Workshop = {
   id: string
@@ -24,7 +25,7 @@ type Material = {
   sort_order: number
 }
 
-type WsTab = 'materials' | 'evaluation'
+type WsTab = 'materials' | 'assessments' | 'evaluation'
 
 const CONTENT_ICON: Record<string, string> = {
   file: '📄', video: '🎬', link: '🔗', quiz: '📝',
@@ -101,8 +102,9 @@ export function WorkshopsTab({ user }: { user: User }) {
   if (selected) {
     const isEnrolled = enrolledIds.has(selected.id)
     const WS_TABS: { key: WsTab; label: string }[] = [
-      { key: 'materials',  label: '📄 المواد' },
-      { key: 'evaluation', label: '⭐ التقييم' },
+      { key: 'materials',   label: '📄 المواد' },
+      { key: 'assessments', label: '📋 التقييمات' },
+      { key: 'evaluation',  label: '⭐ التقييم' },
     ]
     return (
       <div>
@@ -165,6 +167,11 @@ export function WorkshopsTab({ user }: { user: User }) {
               </div>
             )}
 
+
+            {/* Assessments */}
+            {wsTab === 'assessments' && (
+              <WorkshopAssessmentTab user={user} workshopId={selected.id} />
+            )}
 
             {/* Evaluation */}
             {wsTab === 'evaluation' && (
