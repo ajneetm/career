@@ -1,0 +1,657 @@
+'use client'
+
+import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase/client'
+
+const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase())
+
+type AdminTab = 'overview' | 'surveys' | 'users' | 'workshops' | 'consultations' | 'evaluation' | 'projects'
+
+type Survey     = { id: string; name: string | null; email: string | null; survey_type: string; total_score: number | null; modal_scores: Record<string,unknown> | null; language: string; created_at: string }
+type SiteUser   = { id: string; email: string; created_at: string; user_metadata: { name?: string; phone?: string } }
+type Workshop   = { id: string; name_ar: string; name_en: string | null; description_ar: string | null; category: string | null; duration: string | null; discount_percent: number | null; discount_code: string | null; is_active: boolean }
+type Material   = { id: string; workshop_id: string; name: string; url: string; content_type: string; sort_order: number }
+type Enrollment = { id: string; workshop_id: string; user_id: string | null; user_email: string | null; created_at: string }
+type Consult    = { id: string; user_email: string | null; user_name: string | null; subject: string; message: string; reply: string | null; status: string; created_at: string }
+type EvalSettings = { is_open: boolean }
+type WsEval     = { id: string; user_name: string | null; trainer_rating: number; interaction_rating: number; content_rating: number; facilities_rating: number; benefit_rating: number; comments: string | null; created_at: string }
+type Project    = { id: string; owner_id: string | null; owner_name: string | null; title: string; description: string | null; is_active: boolean; created_at: string }
+type ProjEval   = { id: string; project_id: string; person_name: string | null; purpose_rating: number; return_rating: number; obtainability_rating: number; design_rating: number; users_rating: number; competition_rating: number; timeline_rating: number; created_at: string }
+
+const NAV: { key: AdminTab; label: string; icon: string }[] = [
+  { key: 'overview',      label: 'نظرة عامة',     icon: '📊' },
+  { key: 'surveys',       label: 'الاختبارات',     icon: '📋' },
+  { key: 'users',         label: 'المستخدمون',     icon: '👥' },
+  { key: 'workshops',     label: 'الدورات',         icon: '🎓' },
+  { key: 'consultations', label: 'الاستشارات',      icon: '💬' },
+  { key: 'evaluation',    label: 'تقييم الورشة',   icon: '📝' },
+  { key: 'projects',      label: 'المشاريع',        icon: '🗂️' },
+]
+
+const TYPE_AR: Record<string, string> = { riasec: 'اكتشف ميولك', choice: 'جاهزية الاختيار', career: 'المسار المهني' }
+
+function avg(evals: WsEval[], key: keyof WsEval) {
+  if (!evals.length) return 0
+  const sum = evals.reduce((a, e) => a + (Number(e[key]) || 0), 0)
+  return (sum / evals.length).toFixed(1)
+}
+
+function adminFetch(url: string, opts?: RequestInit) {
+  return fetch(url, { ...opts, headers: { 'Content-Type': 'application/json', ...(opts?.headers ?? {}) } })
+}
+
+export function AdminDashboardClient() {
+  const router = useRouter()
+  const [ready, setReady]   = useState(false)
+  const [tab, setTab]       = useState<AdminTab>(() => {
+    if (typeof window !== 'undefined') return (localStorage.getItem('admin_tab') as AdminTab) ?? 'overview'
+    return 'overview'
+  })
+  const [loading, setLoading] = useState(true)
+
+  // data
+  const [surveys, setSurveys]         = useState<Survey[]>([])
+  const [users, setUsers]             = useState<SiteUser[]>([])
+  const [workshops, setWorkshops]     = useState<Workshop[]>([])
+  const [materials, setMaterials]     = useState<Material[]>([])
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([])
+  const [consults, setConsults]       = useState<Consult[]>([])
+  const [evalSettings, setEvalSettings] = useState<EvalSettings>({ is_open: false })
+  const [wsEvals, setWsEvals]         = useState<WsEval[]>([])
+  const [projects, setProjects]       = useState<Project[]>([])
+  const [projEvals, setProjEvals]     = useState<ProjEval[]>([])
+
+  // ui state
+  const [selectedWs, setSelectedWs]       = useState<Workshop | null>(null)
+  const [selectedProj, setSelectedProj]   = useState<Project | null>(null)
+  const [replyingId, setReplyingId]       = useState<string | null>(null)
+  const [replyText, setReplyText]         = useState('')
+  const [confirmDel, setConfirmDel]       = useState<{ type: string; id: string; label: string } | null>(null)
+
+  // add-workshop form
+  const [wsForm, setWsForm] = useState({ name_ar: '', name_en: '', description_ar: '', category: '', duration: '', discount_percent: '', discount_code: '' })
+  const [wsFormOpen, setWsFormOpen] = useState(false)
+  const [wsFormSaving, setWsFormSaving] = useState(false)
+
+  // add-material form
+  const [matForm, setMatForm] = useState({ name: '', url: '', content_type: 'file' })
+  const [matFormSaving, setMatFormSaving] = useState(false)
+
+  // add-enrollment form
+  const [enrEmail, setEnrEmail] = useState('')
+  const [enrSaving, setEnrSaving] = useState(false)
+
+  // add-user form
+  const [userForm, setUserForm] = useState({ name: '', email: '', password: '' })
+  const [userFormOpen, setUserFormOpen] = useState(false)
+  const [userFormSaving, setUserFormSaving] = useState(false)
+
+  const changeTab = (t: AdminTab) => { setTab(t); localStorage.setItem('admin_tab', t) }
+
+  const fetchAll = useCallback(async () => {
+    setLoading(true)
+    const [dataRes, usersRes] = await Promise.all([
+      adminFetch('/api/admin/data'),
+      adminFetch('/api/admin/users'),
+    ])
+    const data = await dataRes.json()
+    const usersData = await usersRes.json()
+    setSurveys(data.surveys ?? [])
+    setWorkshops(data.workshops ?? [])
+    setMaterials(data.materials ?? [])
+    setEnrollments(data.enrollments ?? [])
+    setConsults(data.consultations ?? [])
+    setEvalSettings(data.evalSettings ?? { is_open: false })
+    setWsEvals(data.wsEvals ?? [])
+    setProjects(data.projects ?? [])
+    setProjEvals(data.projEvals ?? [])
+    setUsers(Array.isArray(usersData) ? usersData : [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user || !ADMIN_EMAILS.includes(data.user.email?.toLowerCase() ?? '')) {
+        router.push('/login'); return
+      }
+      setReady(true)
+      fetchAll()
+    })
+  }, [router, fetchAll])
+
+  // ── Delete helper ──
+  async function confirmDelete() {
+    if (!confirmDel) return
+    const { type, id } = confirmDel
+    if (type === 'survey')    { await adminFetch('/api/admin/data', { method: 'DELETE', body: JSON.stringify({ id }) }); setSurveys(s => s.filter(x => x.id !== id)) }
+    if (type === 'user')      { await adminFetch('/api/admin/users', { method: 'DELETE', body: JSON.stringify({ id }) }); setUsers(u => u.filter(x => x.id !== id)) }
+    if (type === 'workshop')  { await adminFetch('/api/admin/workshops', { method: 'DELETE', body: JSON.stringify({ id }) }); setWorkshops(w => w.filter(x => x.id !== id)); if (selectedWs?.id === id) setSelectedWs(null) }
+    if (type === 'material')  { await adminFetch('/api/admin/materials', { method: 'DELETE', body: JSON.stringify({ id }) }); setMaterials(m => m.filter(x => x.id !== id)) }
+    if (type === 'enrollment'){ await adminFetch('/api/admin/enrollments', { method: 'DELETE', body: JSON.stringify({ id }) }); setEnrollments(e => e.filter(x => x.id !== id)) }
+    if (type === 'consult')   { await adminFetch('/api/admin/consultations', { method: 'DELETE', body: JSON.stringify({ id }) }); setConsults(c => c.filter(x => x.id !== id)) }
+    if (type === 'wseval')    { await adminFetch('/api/submit-evaluation', { method: 'DELETE', body: JSON.stringify({ id }) }); setWsEvals(e => e.filter(x => x.id !== id)) }
+    if (type === 'project')   { await adminFetch('/api/admin/projects', { method: 'DELETE', body: JSON.stringify({ id }) }); setProjects(p => p.filter(x => x.id !== id)); if (selectedProj?.id === id) setSelectedProj(null) }
+    setConfirmDel(null)
+  }
+
+  if (!ready) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}><div className="spinner" /></div>
+
+  const pendingConsults = consults.filter(c => c.status === 'pending').length
+
+  // ── Render ──
+  return (
+    <div dir="rtl" style={{ display: 'flex', minHeight: '100vh', background: '#f1f5f9', fontFamily: 'system-ui, sans-serif' }}>
+
+      {/* Sidebar */}
+      <aside style={{ width: 200, background: '#0f172a', color: 'white', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'sticky', top: 0, height: '100vh' }}>
+        <div style={{ padding: '24px 16px 20px', borderBottom: '1px solid #1e293b' }}>
+          <div style={{ fontSize: '0.7rem', color: '#64748b', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>لوحة الإدارة</div>
+          <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'white' }}>Career Admin</div>
+        </div>
+        <nav style={{ flex: 1, padding: '12px 0', overflowY: 'auto' }}>
+          {NAV.map(({ key, label, icon }) => (
+            <button key={key} onClick={() => changeTab(key)}
+              style={{ width: '100%', textAlign: 'right', padding: '11px 16px', background: tab === key ? '#1e293b' : 'transparent',
+                color: tab === key ? 'white' : '#94a3b8', border: 'none', cursor: 'pointer', fontSize: '0.84rem',
+                borderRight: `3px solid ${tab === key ? '#1e5fdc' : 'transparent'}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>{icon}</span>
+              <span>{label}</span>
+              {key === 'consultations' && pendingConsults > 0 && (
+                <span style={{ marginRight: 'auto', background: '#ef4444', color: 'white', fontSize: '0.68rem', borderRadius: 99, padding: '1px 6px', fontWeight: 700 }}>
+                  {pendingConsults}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+        <button onClick={() => { supabase.auth.signOut(); window.location.href = '/' }}
+          style={{ margin: '0 12px 16px', padding: '8px', background: '#1e293b', color: '#64748b', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: '0.8rem' }}>
+          خروج
+        </button>
+      </aside>
+
+      {/* Main */}
+      <main style={{ flex: 1, padding: '28px', overflowY: 'auto', minWidth: 0 }}>
+        {loading ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}><div className="spinner" /></div>
+        ) : (
+          <>
+            {/* ── OVERVIEW ── */}
+            {tab === 'overview' && (
+              <div>
+                <h2 style={styles.heading}>نظرة عامة</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16, marginBottom: 32 }}>
+                  {[
+                    { label: 'المستخدمون', value: users.length, color: '#6366f1' },
+                    { label: 'الاختبارات', value: surveys.length, color: '#0288d1' },
+                    { label: 'الدورات', value: workshops.length, color: '#16a34a' },
+                    { label: 'الاستشارات', value: consults.length, color: '#f59e0b' },
+                    { label: 'التقييمات', value: wsEvals.length, color: '#ef4444' },
+                    { label: 'المشاريع', value: projects.length, color: '#8b5cf6' },
+                  ].map(s => (
+                    <div key={s.label} style={{ background: 'white', borderRadius: 14, padding: '20px 18px', borderTop: `4px solid ${s.color}`, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                      <div style={{ fontSize: '2rem', fontWeight: 800, color: s.color }}>{s.value}</div>
+                      <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: 4 }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div style={styles.card}>
+                    <div style={styles.cardTitle}>الاختبارات حسب النوع</div>
+                    {['riasec', 'choice', 'career'].map(t => {
+                      const count = surveys.filter(s => s.survey_type === t).length
+                      return <div key={t} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.85rem' }}>
+                        <span style={{ color: '#475569' }}>{TYPE_AR[t]}</span>
+                        <span style={{ fontWeight: 700, color: '#0f172a' }}>{count}</span>
+                      </div>
+                    })}
+                  </div>
+                  <div style={styles.card}>
+                    <div style={styles.cardTitle}>الاستشارات حسب الحالة</div>
+                    {['pending', 'replied', 'closed'].map(s => {
+                      const count = consults.filter(c => c.status === s).length
+                      const label = s === 'pending' ? 'قيد المراجعة' : s === 'replied' ? 'تم الرد' : 'مغلقة'
+                      return <div key={s} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.85rem' }}>
+                        <span style={{ color: '#475569' }}>{label}</span>
+                        <span style={{ fontWeight: 700, color: '#0f172a' }}>{count}</span>
+                      </div>
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── SURVEYS ── */}
+            {tab === 'surveys' && (
+              <div>
+                <div style={styles.topRow}>
+                  <h2 style={styles.heading}>الاختبارات ({surveys.length})</h2>
+                  <button style={styles.btnSecondary} onClick={() => exportCSV(surveys)}>تصدير CSV</button>
+                </div>
+                <div style={styles.card}>
+                  <table style={styles.table}>
+                    <thead><tr>
+                      {['الاسم', 'البريد', 'النوع', 'النتيجة', 'التاريخ', ''].map(h => <th key={h} style={styles.th}>{h}</th>)}
+                    </tr></thead>
+                    <tbody>
+                      {surveys.map(s => (
+                        <tr key={s.id} style={styles.tr}>
+                          <td style={styles.td}>{s.name ?? '—'}</td>
+                          <td style={styles.td}>{s.email ?? '—'}</td>
+                          <td style={styles.td}>{TYPE_AR[s.survey_type] ?? s.survey_type}</td>
+                          <td style={styles.td}>{s.total_score != null ? `${Math.round(s.total_score)}%` : '—'}</td>
+                          <td style={styles.td}>{new Date(s.created_at).toLocaleDateString('ar-SA')}</td>
+                          <td style={styles.td}>
+                            <button style={styles.btnDanger} onClick={() => setConfirmDel({ type: 'survey', id: s.id, label: `اختبار ${s.name ?? s.email}` })}>حذف</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* ── USERS ── */}
+            {tab === 'users' && (
+              <div>
+                <div style={styles.topRow}>
+                  <h2 style={styles.heading}>المستخدمون ({users.length})</h2>
+                  <button style={styles.btnPrimary} onClick={() => setUserFormOpen(true)}>+ مستخدم جديد</button>
+                </div>
+
+                {userFormOpen && (
+                  <div style={{ ...styles.card, marginBottom: 20 }}>
+                    <div style={styles.cardTitle}>إضافة مستخدم</div>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      {[['name', 'الاسم'], ['email', 'البريد'], ['password', 'كلمة المرور']].map(([k, lbl]) => (
+                        <input key={k} type={k === 'password' ? 'password' : 'text'} placeholder={lbl}
+                          value={userForm[k as keyof typeof userForm]}
+                          onChange={e => setUserForm(f => ({ ...f, [k]: e.target.value }))}
+                          style={styles.input} />
+                      ))}
+                      <button style={styles.btnPrimary} disabled={userFormSaving} onClick={async () => {
+                        setUserFormSaving(true)
+                        const res = await adminFetch('/api/admin/users', { method: 'POST', body: JSON.stringify(userForm) })
+                        if (res.ok) { setUserFormOpen(false); setUserForm({ name: '', email: '', password: '' }); fetchAll() }
+                        setUserFormSaving(false)
+                      }}>{userFormSaving ? '...' : 'إضافة'}</button>
+                      <button style={styles.btnSecondary} onClick={() => setUserFormOpen(false)}>إلغاء</button>
+                    </div>
+                  </div>
+                )}
+
+                <div style={styles.card}>
+                  <table style={styles.table}>
+                    <thead><tr>
+                      {['الاسم', 'البريد', 'تاريخ التسجيل', ''].map(h => <th key={h} style={styles.th}>{h}</th>)}
+                    </tr></thead>
+                    <tbody>
+                      {users.map(u => (
+                        <tr key={u.id} style={styles.tr}>
+                          <td style={styles.td}>
+                            {u.user_metadata?.name ?? '—'}
+                            {ADMIN_EMAILS.includes(u.email?.toLowerCase()) && <span style={styles.badge('#6366f1')}>أدمن</span>}
+                          </td>
+                          <td style={styles.td}>{u.email}</td>
+                          <td style={styles.td}>{new Date(u.created_at).toLocaleDateString('ar-SA')}</td>
+                          <td style={styles.td}>
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button style={styles.btnSecondary} onClick={async () => {
+                                const res = await adminFetch('/api/admin/impersonate', { method: 'POST', body: JSON.stringify({ email: u.email }) })
+                                const { link } = await res.json()
+                                if (link) window.open(link, '_blank')
+                              }}>دخول</button>
+                              <button style={styles.btnDanger} onClick={() => setConfirmDel({ type: 'user', id: u.id, label: u.email })}>حذف</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* ── WORKSHOPS ── */}
+            {tab === 'workshops' && (
+              <div style={{ display: 'flex', gap: 20 }}>
+                {/* Workshop list */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={styles.topRow}>
+                    <h2 style={styles.heading}>الدورات</h2>
+                    <button style={styles.btnPrimary} onClick={() => setWsFormOpen(v => !v)}>+ دورة جديدة</button>
+                  </div>
+
+                  {wsFormOpen && (
+                    <div style={{ ...styles.card, marginBottom: 16 }}>
+                      <div style={styles.cardTitle}>إضافة دورة</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {[['name_ar', 'الاسم بالعربي *'], ['name_en', 'الاسم بالانجليزي'], ['description_ar', 'الوصف'], ['category', 'الفئة'], ['duration', 'المدة'], ['discount_percent', 'الخصم %'], ['discount_code', 'كود الخصم']].map(([k, lbl]) => (
+                          <input key={k} placeholder={lbl} value={wsForm[k as keyof typeof wsForm]}
+                            onChange={e => setWsForm(f => ({ ...f, [k]: e.target.value }))}
+                            style={styles.input} />
+                        ))}
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button style={styles.btnPrimary} disabled={wsFormSaving || !wsForm.name_ar} onClick={async () => {
+                            setWsFormSaving(true)
+                            const res = await adminFetch('/api/admin/workshops', { method: 'POST', body: JSON.stringify({ ...wsForm, discount_percent: Number(wsForm.discount_percent) || 0 }) })
+                            if (res.ok) { setWsFormOpen(false); setWsForm({ name_ar: '', name_en: '', description_ar: '', category: '', duration: '', discount_percent: '', discount_code: '' }); fetchAll() }
+                            setWsFormSaving(false)
+                          }}>{wsFormSaving ? '...' : 'حفظ'}</button>
+                          <button style={styles.btnSecondary} onClick={() => setWsFormOpen(false)}>إلغاء</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {workshops.map(ws => {
+                      const wsEnrs = enrollments.filter(e => e.workshop_id === ws.id)
+                      const wsMats = materials.filter(m => m.workshop_id === ws.id)
+                      return (
+                        <div key={ws.id} style={{ ...styles.card, cursor: 'pointer', borderRight: `3px solid ${selectedWs?.id === ws.id ? '#1e5fdc' : '#e2e8f0'}` }}
+                          onClick={() => setSelectedWs(selectedWs?.id === ws.id ? null : ws)}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: '0.92rem', color: '#1e293b' }}>{ws.name_ar}</div>
+                              <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 2 }}>
+                                {wsMats.length} مادة · {wsEnrs.length} مسجّل
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button style={styles.btnDanger} onClick={e => { e.stopPropagation(); setConfirmDel({ type: 'workshop', id: ws.id, label: ws.name_ar }) }}>حذف</button>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Workshop detail panel */}
+                {selectedWs && (
+                  <div style={{ width: 360, flexShrink: 0 }}>
+                    <div style={{ ...styles.card, position: 'sticky', top: 28 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                        <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem' }}>{selectedWs.name_ar}</div>
+                        <button onClick={() => setSelectedWs(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '1.2rem' }}>×</button>
+                      </div>
+
+                      {/* Materials */}
+                      <div style={styles.cardTitle}>المواد</div>
+                      {materials.filter(m => m.workshop_id === selectedWs.id).map(m => (
+                        <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.82rem' }}>
+                          <span style={{ color: '#334155' }}>{m.name}</span>
+                          <button style={styles.btnDanger} onClick={() => setConfirmDel({ type: 'material', id: m.id, label: m.name })}>×</button>
+                        </div>
+                      ))}
+                      <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+                        <input placeholder="اسم المادة" value={matForm.name} onChange={e => setMatForm(f => ({ ...f, name: e.target.value }))} style={{ ...styles.input, flex: 1, minWidth: 100 }} />
+                        <input placeholder="رابط URL" value={matForm.url} onChange={e => setMatForm(f => ({ ...f, url: e.target.value }))} style={{ ...styles.input, flex: 1, minWidth: 100 }} />
+                        <select value={matForm.content_type} onChange={e => setMatForm(f => ({ ...f, content_type: e.target.value }))} style={styles.input}>
+                          {['file', 'video', 'link', 'quiz'].map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                        <button style={styles.btnPrimary} disabled={matFormSaving || !matForm.name || !matForm.url} onClick={async () => {
+                          setMatFormSaving(true)
+                          const res = await adminFetch('/api/admin/materials', { method: 'POST', body: JSON.stringify({ ...matForm, workshop_id: selectedWs.id }) })
+                          if (res.ok) { const d = await res.json(); setMaterials(m => [...m, { ...matForm, id: d.id, workshop_id: selectedWs.id, sort_order: 0 }]); setMatForm({ name: '', url: '', content_type: 'file' }) }
+                          setMatFormSaving(false)
+                        }}>{matFormSaving ? '...' : 'إضافة'}</button>
+                      </div>
+
+                      {/* Enrollments */}
+                      <div style={{ ...styles.cardTitle, marginTop: 20 }}>المسجّلون</div>
+                      {enrollments.filter(e => e.workshop_id === selectedWs.id).map(e => (
+                        <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.82rem' }}>
+                          <span style={{ color: '#334155' }}>{e.user_email ?? '—'}</span>
+                          <button style={styles.btnDanger} onClick={() => setConfirmDel({ type: 'enrollment', id: e.id, label: e.user_email ?? '' })}>×</button>
+                        </div>
+                      ))}
+                      <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+                        <input placeholder="بريد المستخدم" value={enrEmail} onChange={e => setEnrEmail(e.target.value)} style={{ ...styles.input, flex: 1 }} />
+                        <button style={styles.btnPrimary} disabled={enrSaving || !enrEmail} onClick={async () => {
+                          setEnrSaving(true)
+                          const res = await adminFetch('/api/admin/enrollments', { method: 'POST', body: JSON.stringify({ workshop_id: selectedWs.id, user_email: enrEmail }) })
+                          if (res.ok) { fetchAll(); setEnrEmail('') }
+                          setEnrSaving(false)
+                        }}>{enrSaving ? '...' : 'تسجيل'}</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── CONSULTATIONS ── */}
+            {tab === 'consultations' && (
+              <div>
+                <h2 style={styles.heading}>الاستشارات ({consults.length})</h2>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {consults.map(c => (
+                    <div key={c.id} style={{ ...styles.card, borderRight: `3px solid ${c.status === 'replied' ? '#16a34a' : c.status === 'closed' ? '#94a3b8' : '#f59e0b'}` }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                            <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{c.subject}</span>
+                            <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: 99, background: c.status === 'replied' ? '#dcfce7' : c.status === 'closed' ? '#f1f5f9' : '#fef3c7', color: c.status === 'replied' ? '#16a34a' : c.status === 'closed' ? '#64748b' : '#92400e', fontWeight: 600 }}>
+                              {c.status === 'replied' ? 'تم الرد' : c.status === 'closed' ? 'مغلقة' : 'قيد المراجعة'}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: 4 }}>{c.user_name ?? c.user_email}</div>
+                          <div style={{ fontSize: '0.84rem', color: '#334155' }}>{c.message}</div>
+                          {c.reply && <div style={{ marginTop: 8, background: '#f0fdf4', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#166534' }}>الرد: {c.reply}</div>}
+
+                          {replyingId === c.id ? (
+                            <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                              <textarea value={replyText} onChange={e => setReplyText(e.target.value)} rows={2} placeholder="اكتب ردك..."
+                                style={{ ...styles.input, flex: 1, minWidth: 200, resize: 'vertical' }} />
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                <button style={styles.btnPrimary} onClick={async () => {
+                                  await adminFetch('/api/admin/consultations', { method: 'PATCH', body: JSON.stringify({ id: c.id, reply: replyText, status: 'replied' }) })
+                                  setConsults(cs => cs.map(x => x.id === c.id ? { ...x, reply: replyText, status: 'replied' } : x))
+                                  setReplyingId(null); setReplyText('')
+                                }}>إرسال</button>
+                                <button style={styles.btnSecondary} onClick={() => setReplyingId(null)}>إلغاء</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+                              <button style={styles.btnSecondary} onClick={() => { setReplyingId(c.id); setReplyText(c.reply ?? '') }}>
+                                {c.reply ? 'تعديل الرد' : 'رد'}
+                              </button>
+                              {c.status !== 'closed' && (
+                                <button style={styles.btnSecondary} onClick={async () => {
+                                  await adminFetch('/api/admin/consultations', { method: 'PATCH', body: JSON.stringify({ id: c.id, status: 'closed' }) })
+                                  setConsults(cs => cs.map(x => x.id === c.id ? { ...x, status: 'closed' } : x))
+                                }}>إغلاق</button>
+                              )}
+                              <button style={styles.btnDanger} onClick={() => setConfirmDel({ type: 'consult', id: c.id, label: c.subject })}>حذف</button>
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: '#94a3b8', flexShrink: 0 }}>{new Date(c.created_at).toLocaleDateString('ar-SA')}</div>
+                      </div>
+                    </div>
+                  ))}
+                  {consults.length === 0 && <div style={{ color: '#94a3b8', textAlign: 'center', padding: 40 }}>لا توجد استشارات</div>}
+                </div>
+              </div>
+            )}
+
+            {/* ── EVALUATION ── */}
+            {tab === 'evaluation' && (
+              <div>
+                <h2 style={styles.heading}>تقييم الورشة</h2>
+                <div style={{ ...styles.card, marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>حالة التقييم</div>
+                    <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{evalSettings.is_open ? '🟢 مفتوح للمستخدمين' : '🔴 مغلق'}</div>
+                  </div>
+                  <button style={evalSettings.is_open ? styles.btnDanger : styles.btnPrimary} onClick={async () => {
+                    const newVal = !evalSettings.is_open
+                    await adminFetch('/api/admin/eval-settings', { method: 'PATCH', body: JSON.stringify({ is_open: newVal }) })
+                    setEvalSettings({ is_open: newVal })
+                  }}>{evalSettings.is_open ? 'إغلاق التقييم' : 'فتح التقييم'}</button>
+                </div>
+
+                {wsEvals.length > 0 && (
+                  <div style={{ ...styles.card, marginBottom: 20 }}>
+                    <div style={styles.cardTitle}>متوسطات التقييم ({wsEvals.length} تقييم)</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginTop: 12 }}>
+                      {[['trainer_rating', 'المدرّب'], ['interaction_rating', 'التفاعل'], ['content_rating', 'المحتوى'], ['facilities_rating', 'التجهيزات'], ['benefit_rating', 'الفائدة']].map(([k, lbl]) => (
+                        <div key={k} style={{ textAlign: 'center', background: '#f8fafc', borderRadius: 10, padding: '12px 8px' }}>
+                          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#1e5fdc' }}>{avg(wsEvals, k as keyof WsEval)}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{lbl}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div style={styles.card}>
+                  <table style={styles.table}>
+                    <thead><tr>
+                      {['المستخدم', 'مدرّب', 'تفاعل', 'محتوى', 'تجهيزات', 'فائدة', 'التاريخ', ''].map(h => <th key={h} style={styles.th}>{h}</th>)}
+                    </tr></thead>
+                    <tbody>
+                      {wsEvals.map(e => (
+                        <tr key={e.id} style={styles.tr}>
+                          <td style={styles.td}>{e.user_name ?? '—'}</td>
+                          {[e.trainer_rating, e.interaction_rating, e.content_rating, e.facilities_rating, e.benefit_rating].map((v, i) => (
+                            <td key={i} style={styles.td}><span style={{ fontWeight: 600, color: v >= 4 ? '#16a34a' : v >= 3 ? '#f59e0b' : '#ef4444' }}>{v}⭐</span></td>
+                          ))}
+                          <td style={styles.td}>{new Date(e.created_at).toLocaleDateString('ar-SA')}</td>
+                          <td style={styles.td}><button style={styles.btnDanger} onClick={() => setConfirmDel({ type: 'wseval', id: e.id, label: e.user_name ?? '' })}>حذف</button></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* ── PROJECTS ── */}
+            {tab === 'projects' && (
+              <div style={{ display: 'flex', gap: 20 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h2 style={styles.heading}>المشاريع ({projects.length})</h2>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {projects.map(p => {
+                      const evals = projEvals.filter(e => e.project_id === p.id)
+                      return (
+                        <div key={p.id} style={{ ...styles.card, cursor: 'pointer', borderRight: `3px solid ${selectedProj?.id === p.id ? '#1e5fdc' : p.is_active ? '#16a34a' : '#e2e8f0'}` }}
+                          onClick={() => setSelectedProj(selectedProj?.id === p.id ? null : p)}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                <span style={{ fontWeight: 600, fontSize: '0.92rem' }}>{p.title}</span>
+                                <span style={styles.badge(p.is_active ? '#16a34a' : '#94a3b8')}>{p.is_active ? 'نشط' : 'قيد المراجعة'}</span>
+                              </div>
+                              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{p.owner_name} · {evals.length} تقييم</div>
+                            </div>
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button style={p.is_active ? styles.btnSecondary : styles.btnPrimary} onClick={async e => {
+                                e.stopPropagation()
+                                await adminFetch('/api/admin/projects', { method: 'PATCH', body: JSON.stringify({ id: p.id, is_active: !p.is_active }) })
+                                setProjects(ps => ps.map(x => x.id === p.id ? { ...x, is_active: !p.is_active } : x))
+                              }}>{p.is_active ? 'إيقاف' : 'تفعيل'}</button>
+                              <button style={styles.btnDanger} onClick={e => { e.stopPropagation(); setConfirmDel({ type: 'project', id: p.id, label: p.title }) }}>حذف</button>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {selectedProj && (
+                  <div style={{ width: 380, flexShrink: 0 }}>
+                    <div style={{ ...styles.card, position: 'sticky', top: 28 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <div style={{ fontWeight: 700, color: '#0f172a' }}>{selectedProj.title}</div>
+                        <button onClick={() => setSelectedProj(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '1.2rem' }}>×</button>
+                      </div>
+                      {selectedProj.description && <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: 12 }}>{selectedProj.description}</p>}
+
+                      {/* QR code */}
+                      <div style={{ ...styles.cardTitle, marginBottom: 10 }}>رابط التقييم</div>
+                      <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12, textAlign: 'center', marginBottom: 16 }}>
+                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(typeof window !== 'undefined' ? `${window.location.origin}/evaluate/${selectedProj.id}` : '')}`}
+                          alt="QR" style={{ width: 160, height: 160 }} />
+                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 8, wordBreak: 'break-all' }}>
+                          /evaluate/{selectedProj.id}
+                        </div>
+                        <button style={{ ...styles.btnSecondary, marginTop: 8, fontSize: '0.78rem' }} onClick={() => navigator.clipboard.writeText(`${window.location.origin}/evaluate/${selectedProj.id}`)}>
+                          نسخ الرابط
+                        </button>
+                      </div>
+
+                      {/* Evaluations */}
+                      <div style={styles.cardTitle}>التقييمات ({projEvals.filter(e => e.project_id === selectedProj.id).length})</div>
+                      {projEvals.filter(e => e.project_id === selectedProj.id).map(e => {
+                        const total = e.purpose_rating + e.return_rating + e.obtainability_rating + e.design_rating + e.users_rating + e.competition_rating + e.timeline_rating
+                        return (
+                          <div key={e.id} style={{ padding: '8px 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.82rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: '#334155' }}>{e.person_name ?? '—'}</span>
+                              <span style={{ fontWeight: 700, color: '#1e5fdc' }}>{total}/70</span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </main>
+
+      {/* Confirm Delete Modal */}
+      {confirmDel && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'white', borderRadius: 16, padding: '28px 32px', maxWidth: 360, width: '90%', textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', marginBottom: 12 }}>⚠️</div>
+            <div style={{ fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>تأكيد الحذف</div>
+            <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: 24 }}>{confirmDel.label}</div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <button style={styles.btnDanger} onClick={confirmDelete}>حذف</button>
+              <button style={styles.btnSecondary} onClick={() => setConfirmDel(null)}>إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Styles ──
+const styles = {
+  heading: { fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', marginBottom: 20 } as React.CSSProperties,
+  topRow:  { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 } as React.CSSProperties,
+  card:    { background: 'white', borderRadius: 14, padding: '18px 20px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' } as React.CSSProperties,
+  cardTitle: { fontSize: '0.78rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 } as React.CSSProperties,
+  table:   { width: '100%', borderCollapse: 'collapse' } as React.CSSProperties,
+  th:      { textAlign: 'right', padding: '10px 12px', fontSize: '0.78rem', fontWeight: 600, color: '#64748b', borderBottom: '1px solid #e2e8f0' } as React.CSSProperties,
+  td:      { padding: '10px 12px', fontSize: '0.84rem', color: '#334155', borderBottom: '1px solid #f1f5f9' } as React.CSSProperties,
+  tr:      { transition: 'background 0.1s' } as React.CSSProperties,
+  input:   { border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' } as React.CSSProperties,
+  btnPrimary:  { background: '#1e5fdc', color: 'white', border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: '0.84rem', fontWeight: 600 } as React.CSSProperties,
+  btnSecondary:{ background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: '0.84rem' } as React.CSSProperties,
+  btnDanger:   { background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 } as React.CSSProperties,
+  badge: (color: string) => ({ fontSize: '0.68rem', background: color + '20', color, padding: '2px 8px', borderRadius: 99, fontWeight: 600 }) as React.CSSProperties,
+}
+
+function exportCSV(surveys: Survey[]) {
+  const rows = [
+    ['الاسم', 'البريد', 'النوع', 'النتيجة', 'اللغة', 'التاريخ'],
+    ...surveys.map(s => [s.name ?? '', s.email ?? '', s.survey_type, s.total_score != null ? Math.round(s.total_score) : '', s.language, new Date(s.created_at).toLocaleDateString('ar-SA')]),
+  ]
+  const csv = rows.map(r => r.join(',')).join('\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a'); a.href = url; a.download = `surveys-${new Date().toISOString().slice(0,10)}.csv`; a.click()
+}
