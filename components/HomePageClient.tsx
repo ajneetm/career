@@ -91,7 +91,7 @@ export function HomePageClient() {
             transition={{ duration: 0.5, delay: 0.5 }}
           >
             <p className="cpd-tagline">{home.cpdTagline}</p>
-            <Link href="/workshops" className="btn-join-us">{home.joinUs}</Link>
+            <Link href="/signup" className="btn-join-us">{home.joinUs}</Link>
           </motion.div>
         </div>
 
