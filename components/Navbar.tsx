@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { FiLogIn, FiUser } from 'react-icons/fi';
+import { FiLogIn, FiUser, FiLogOut } from 'react-icons/fi';
 
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { fallbackNavigationItems, type NavigationItemDTO } from '@/lib/navigation-fallback';
+import { supabase } from '@/lib/supabase/client';
 
 export default function Navbar() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -14,6 +15,7 @@ export default function Navbar() {
   const { locale, t } = useI18n();
   const nav = t('nav');
   const [menuLinks, setMenuLinks] = useState<NavigationItemDTO[]>(fallbackNavigationItems);
+  const [loggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -24,9 +26,15 @@ export default function Navbar() {
         setMenuLinks(data as NavigationItemDTO[]);
       })
       .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setLoggedIn(!!data.user));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setLoggedIn(!!session?.user);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   const linkLabel = (item: NavigationItemDTO) => (locale === 'ar' ? item.labelAr : item.labelEn);
@@ -42,12 +50,24 @@ export default function Navbar() {
           </div>
 
           <div className="nav-icons" style={{ display: 'flex', gap: '12px', fontSize: '22px' }}>
-            <Link href="/login" title={nav.login} style={{ color: 'inherit' }}>
-              <FiLogIn />
-            </Link>
-            <Link href="/profile" title={nav.profile} style={{ color: 'inherit' }}>
-              <FiUser />
-            </Link>
+            {loggedIn ? (
+              <>
+                <Link href="/user" title="حسابي" style={{ color: 'inherit' }}>
+                  <FiUser />
+                </Link>
+                <button
+                  title="تسجيل الخروج"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: '22px', padding: 0 }}
+                  onClick={async () => { await supabase.auth.signOut(); window.location.href = '/'; }}
+                >
+                  <FiLogOut />
+                </button>
+              </>
+            ) : (
+              <Link href="/login" title={nav.login} style={{ color: 'inherit' }}>
+                <FiLogIn />
+              </Link>
+            )}
           </div>
         </div>
 

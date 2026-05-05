@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
+import { WorkshopsTab } from '@/components/WorkshopsTab'
 
-type Tab = 'profile' | 'consultations' | 'reports'
+type Tab = 'profile' | 'consultations' | 'reports' | 'workshops'
 
 type SurveyResult = { id: string; survey_type: string; total_score: number | null; created_at: string }
 type Consultation  = { id: string; subject: string; message: string; reply: string | null; status: string; created_at: string }
@@ -102,6 +103,7 @@ export function UserDashboardClient() {
 
   const NAV: { key: Tab; label: string }[] = [
     { key: 'profile',       label: 'الملف الشخصي' },
+    { key: 'workshops',     label: 'الدورات' },
     { key: 'reports',       label: `تقاريري ${reports.length > 0 ? `(${reports.length})` : ''}` },
     { key: 'consultations', label: 'الاستشارات' },
   ]
@@ -173,6 +175,9 @@ export function UserDashboardClient() {
             </div>
           </div>
         )}
+
+        {/* ─── Workshops ─── */}
+        {tab === 'workshops' && user && <WorkshopsTab user={user} />}
 
         {/* ─── Reports ─── */}
         {tab === 'reports' && (
