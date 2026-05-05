@@ -18,6 +18,7 @@ type EvalSettings = { is_open: boolean }
 type WsEval     = { id: string; user_name: string | null; trainer_rating: number; interaction_rating: number; content_rating: number; facilities_rating: number; benefit_rating: number; comments: string | null; created_at: string }
 type Project    = { id: string; owner_id: string | null; owner_name: string | null; title: string; description: string | null; is_active: boolean; created_at: string }
 type ProjEval   = { id: string; project_id: string; person_name: string | null; purpose_rating: number; return_rating: number; obtainability_rating: number; design_rating: number; users_rating: number; competition_rating: number; timeline_rating: number; created_at: string }
+type StrangeProf = { id: string; workshop_id: string; name: string; code: string; is_active: boolean; strange_profession_votes: { id: string; avg_score: number }[] }
 
 const NAV: { key: AdminTab; label: string; icon: string }[] = [
   { key: 'overview',      label: 'نظرة عامة',     icon: '📊' },
@@ -81,6 +82,12 @@ export function AdminDashboardClient() {
   // add-enrollment form
   const [enrEmail, setEnrEmail] = useState('')
   const [enrSaving, setEnrSaving] = useState(false)
+
+  // strange professions
+  const [strangeProfessions, setStrangeProfessions] = useState<StrangeProf[]>([])
+  const [strangeName, setStrangeName] = useState('')
+  const [strangeSaving, setStrangeSaving] = useState(false)
+  const [wsPanel, setWsPanel] = useState<'materials' | 'enrollments' | 'strange'>('materials')
 
   // add-user form
   const [userForm, setUserForm] = useState({ name: '', email: '', password: '' })
@@ -352,7 +359,15 @@ export function AdminDashboardClient() {
                       const wsMats = materials.filter(m => m.workshop_id === ws.id)
                       return (
                         <div key={ws.id} style={{ ...styles.card, cursor: 'pointer', borderRight: `3px solid ${selectedWs?.id === ws.id ? '#1e5fdc' : '#e2e8f0'}` }}
-                          onClick={() => setSelectedWs(selectedWs?.id === ws.id ? null : ws)}>
+                          onClick={() => {
+                            const next = selectedWs?.id === ws.id ? null : ws
+                            setSelectedWs(next)
+                            setWsPanel('materials')
+                            if (next) {
+                              fetch(`/api/admin/strange?workshop_id=${next.id}`)
+                                .then(r => r.json()).then(setStrangeProfessions)
+                            }
+                          }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
                               <div style={{ fontWeight: 600, fontSize: '0.92rem', color: '#1e293b' }}>{ws.name_ar}</div>
@@ -374,50 +389,134 @@ export function AdminDashboardClient() {
                 {selectedWs && (
                   <div style={{ width: 360, flexShrink: 0 }}>
                     <div style={{ ...styles.card, position: 'sticky', top: 28 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                         <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem' }}>{selectedWs.name_ar}</div>
                         <button onClick={() => setSelectedWs(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '1.2rem' }}>×</button>
                       </div>
 
-                      {/* Materials */}
-                      <div style={styles.cardTitle}>المواد</div>
-                      {materials.filter(m => m.workshop_id === selectedWs.id).map(m => (
-                        <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.82rem' }}>
-                          <span style={{ color: '#334155' }}>{m.name}</span>
-                          <button style={styles.btnDanger} onClick={() => setConfirmDel({ type: 'material', id: m.id, label: m.name })}>×</button>
-                        </div>
-                      ))}
-                      <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
-                        <input placeholder="اسم المادة" value={matForm.name} onChange={e => setMatForm(f => ({ ...f, name: e.target.value }))} style={{ ...styles.input, flex: 1, minWidth: 100 }} />
-                        <input placeholder="رابط URL" value={matForm.url} onChange={e => setMatForm(f => ({ ...f, url: e.target.value }))} style={{ ...styles.input, flex: 1, minWidth: 100 }} />
-                        <select value={matForm.content_type} onChange={e => setMatForm(f => ({ ...f, content_type: e.target.value }))} style={styles.input}>
-                          {['file', 'video', 'link', 'quiz'].map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                        <button style={styles.btnPrimary} disabled={matFormSaving || !matForm.name || !matForm.url} onClick={async () => {
-                          setMatFormSaving(true)
-                          const res = await adminFetch('/api/admin/materials', { method: 'POST', body: JSON.stringify({ ...matForm, workshop_id: selectedWs.id }) })
-                          if (res.ok) { const d = await res.json(); setMaterials(m => [...m, { ...matForm, id: d.id, workshop_id: selectedWs.id, sort_order: 0 }]); setMatForm({ name: '', url: '', content_type: 'file' }) }
-                          setMatFormSaving(false)
-                        }}>{matFormSaving ? '...' : 'إضافة'}</button>
+                      {/* Panel tabs */}
+                      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid #e2e8f0', paddingBottom: 0 }}>
+                        {([['materials','المواد'], ['enrollments','المسجّلون'], ['strange','المهن الغريبة 🎭']] as const).map(([k, lbl]) => (
+                          <button key={k} onClick={() => setWsPanel(k)}
+                            style={{ padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.78rem', fontWeight: wsPanel === k ? 700 : 400, color: wsPanel === k ? '#1e5fdc' : '#64748b', borderBottom: `2px solid ${wsPanel === k ? '#1e5fdc' : 'transparent'}`, marginBottom: -1 }}>
+                            {lbl}
+                          </button>
+                        ))}
                       </div>
 
-                      {/* Enrollments */}
-                      <div style={{ ...styles.cardTitle, marginTop: 20 }}>المسجّلون</div>
-                      {enrollments.filter(e => e.workshop_id === selectedWs.id).map(e => (
-                        <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.82rem' }}>
-                          <span style={{ color: '#334155' }}>{e.user_email ?? '—'}</span>
-                          <button style={styles.btnDanger} onClick={() => setConfirmDel({ type: 'enrollment', id: e.id, label: e.user_email ?? '' })}>×</button>
-                        </div>
-                      ))}
-                      <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
-                        <input placeholder="بريد المستخدم" value={enrEmail} onChange={e => setEnrEmail(e.target.value)} style={{ ...styles.input, flex: 1 }} />
-                        <button style={styles.btnPrimary} disabled={enrSaving || !enrEmail} onClick={async () => {
-                          setEnrSaving(true)
-                          const res = await adminFetch('/api/admin/enrollments', { method: 'POST', body: JSON.stringify({ workshop_id: selectedWs.id, user_email: enrEmail }) })
-                          if (res.ok) { fetchAll(); setEnrEmail('') }
-                          setEnrSaving(false)
-                        }}>{enrSaving ? '...' : 'تسجيل'}</button>
-                      </div>
+                      {/* Materials panel */}
+                      {wsPanel === 'materials' && (
+                        <>
+                          <div style={styles.cardTitle}>المواد</div>
+                          {materials.filter(m => m.workshop_id === selectedWs.id).map(m => (
+                            <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.82rem' }}>
+                              <span style={{ color: '#334155' }}>{m.name}</span>
+                              <button style={styles.btnDanger} onClick={() => setConfirmDel({ type: 'material', id: m.id, label: m.name })}>×</button>
+                            </div>
+                          ))}
+                          <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+                            <input placeholder="اسم المادة" value={matForm.name} onChange={e => setMatForm(f => ({ ...f, name: e.target.value }))} style={{ ...styles.input, flex: 1, minWidth: 100 }} />
+                            <input placeholder="رابط URL" value={matForm.url} onChange={e => setMatForm(f => ({ ...f, url: e.target.value }))} style={{ ...styles.input, flex: 1, minWidth: 100 }} />
+                            <select value={matForm.content_type} onChange={e => setMatForm(f => ({ ...f, content_type: e.target.value }))} style={styles.input}>
+                              {['file', 'video', 'link', 'quiz'].map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                            <button style={styles.btnPrimary} disabled={matFormSaving || !matForm.name || !matForm.url} onClick={async () => {
+                              setMatFormSaving(true)
+                              const res = await adminFetch('/api/admin/materials', { method: 'POST', body: JSON.stringify({ ...matForm, workshop_id: selectedWs.id }) })
+                              if (res.ok) { const d = await res.json(); setMaterials(m => [...m, { ...matForm, id: d.id, workshop_id: selectedWs.id, sort_order: 0 }]); setMatForm({ name: '', url: '', content_type: 'file' }) }
+                              setMatFormSaving(false)
+                            }}>{matFormSaving ? '...' : 'إضافة'}</button>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Enrollments panel */}
+                      {wsPanel === 'enrollments' && (
+                        <>
+                          <div style={styles.cardTitle}>المسجّلون</div>
+                          {enrollments.filter(e => e.workshop_id === selectedWs.id).map(e => (
+                            <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.82rem' }}>
+                              <span style={{ color: '#334155' }}>{e.user_email ?? '—'}</span>
+                              <button style={styles.btnDanger} onClick={() => setConfirmDel({ type: 'enrollment', id: e.id, label: e.user_email ?? '' })}>×</button>
+                            </div>
+                          ))}
+                          <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+                            <input placeholder="بريد المستخدم" value={enrEmail} onChange={e => setEnrEmail(e.target.value)} style={{ ...styles.input, flex: 1 }} />
+                            <button style={styles.btnPrimary} disabled={enrSaving || !enrEmail} onClick={async () => {
+                              setEnrSaving(true)
+                              const res = await adminFetch('/api/admin/enrollments', { method: 'POST', body: JSON.stringify({ workshop_id: selectedWs.id, user_email: enrEmail }) })
+                              if (res.ok) { fetchAll(); setEnrEmail('') }
+                              setEnrSaving(false)
+                            }}>{enrSaving ? '...' : 'تسجيل'}</button>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Strange Professions panel */}
+                      {wsPanel === 'strange' && (
+                        <>
+                          <div style={styles.cardTitle}>المهن الغريبة 🎭</div>
+
+                          {/* Sorted by avg score */}
+                          {[...strangeProfessions]
+                            .filter(p => p.workshop_id === selectedWs.id)
+                            .sort((a, b) => {
+                              const avgA = a.strange_profession_votes.length ? a.strange_profession_votes.reduce((s, v) => s + v.avg_score, 0) / a.strange_profession_votes.length : 0
+                              const avgB = b.strange_profession_votes.length ? b.strange_profession_votes.reduce((s, v) => s + v.avg_score, 0) / b.strange_profession_votes.length : 0
+                              return avgB - avgA
+                            })
+                            .map((p, idx) => {
+                              const votes = p.strange_profession_votes
+                              const avg = votes.length ? (votes.reduce((s, v) => s + v.avg_score, 0) / votes.length).toFixed(2) : '—'
+                              const isWinner = idx === 0 && votes.length > 0
+                              const link = typeof window !== 'undefined' ? `${window.location.origin}/strange/${p.code}` : `/strange/${p.code}`
+                              return (
+                                <div key={p.id} style={{ padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div style={{ fontSize: '0.84rem', fontWeight: 600, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        {isWinner && <span>🏆</span>}
+                                        {p.name}
+                                      </div>
+                                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 2 }}>
+                                        كود: <strong style={{ color: '#1e5fdc' }}>{p.code}</strong> · {votes.length} صوت · متوسط: {avg}
+                                      </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 4 }}>
+                                      <button style={{ ...styles.btnSecondary, fontSize: '0.72rem', padding: '4px 8px' }}
+                                        onClick={() => navigator.clipboard.writeText(link)}>نسخ</button>
+                                      <button style={styles.btnDanger}
+                                        onClick={() => { setStrangeProfessions(ps => ps.filter(x => x.id !== p.id)); adminFetch('/api/admin/strange', { method: 'DELETE', body: JSON.stringify({ id: p.id }) }) }}>×</button>
+                                    </div>
+                                  </div>
+                                  {/* QR */}
+                                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(link)}`}
+                                    alt="QR" style={{ width: 80, height: 80, marginTop: 8, borderRadius: 8 }} />
+                                </div>
+                              )
+                            })}
+
+                          {strangeProfessions.filter(p => p.workshop_id === selectedWs.id).length === 0 && (
+                            <p style={{ color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center', padding: '16px 0' }}>لا توجد مهن بعد</p>
+                          )}
+
+                          {/* Add form */}
+                          <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
+                            <input placeholder="اسم المهنة الغريبة" value={strangeName} onChange={e => setStrangeName(e.target.value)}
+                              style={{ ...styles.input, flex: 1 }} />
+                            <button style={styles.btnPrimary} disabled={strangeSaving || !strangeName} onClick={async () => {
+                              setStrangeSaving(true)
+                              const res = await adminFetch('/api/admin/strange', { method: 'POST', body: JSON.stringify({ workshop_id: selectedWs.id, name: strangeName }) })
+                              if (res.ok) {
+                                const d = await res.json()
+                                setStrangeProfessions(ps => [...ps, { id: d.id, workshop_id: selectedWs.id, name: strangeName, code: d.code, is_active: true, strange_profession_votes: [] }])
+                                setStrangeName('')
+                              }
+                              setStrangeSaving(false)
+                            }}>{strangeSaving ? '...' : 'إضافة'}</button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
