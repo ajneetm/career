@@ -12,6 +12,7 @@ export async function GET() {
     { data: wsEvals },
     { data: projects },
     { data: projectEvals },
+    { data: wsRegistrations },
   ] = await Promise.all([
     supabaseAdmin.from('survey_results').select('*').order('created_at', { ascending: false }),
     supabaseAdmin.from('workshops').select('*').order('created_at'),
@@ -22,6 +23,7 @@ export async function GET() {
     supabaseAdmin.from('workshop_evaluations').select('*').order('created_at', { ascending: false }),
     supabaseAdmin.from('projects').select('*').order('created_at', { ascending: false }),
     supabaseAdmin.from('project_evaluations').select('*').order('created_at', { ascending: false }),
+    supabaseAdmin.from('workshop_registrations').select('*').order('created_at', { ascending: false }),
   ])
 
   return NextResponse.json({
@@ -34,5 +36,6 @@ export async function GET() {
     wsEvals: wsEvals ?? [],
     projects: projects ?? [],
     projectEvals: projectEvals ?? [],
+    wsRegistrations: wsRegistrations ?? [],
   })
 }

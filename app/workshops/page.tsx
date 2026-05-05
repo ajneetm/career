@@ -63,8 +63,11 @@ export default function WorkshopsPage() {
     if (cat && valid.includes(cat)) setFilter(cat)
   }, []);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedWorkshop, setSelectedWorkshop] = useState('');
+  const [selectedWorkshop, setSelectedWorkshop] = useState<{ id: string; title: string } | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [form, setForm] = useState({ name: '', phone: '', email: '' });
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -231,9 +234,11 @@ export default function WorkshopsPage() {
         <button
           type="button"
           onClick={() => {
-            setSelectedWorkshop(ws.title);
+            setSelectedWorkshop({ id: ws.id, title: ws.title });
             setIsModalOpen(true);
             setSubmitted(false);
+            setSubmitError('');
+            setForm({ name: '', phone: '', email: '' });
           }}
           style={{
             width: '100%',
@@ -328,7 +333,7 @@ export default function WorkshopsPage() {
         <div style={gridStyle}>{filteredWorkshops.map(renderCard)}</div>
       )}
 
-      {isModalOpen && (
+      {isModalOpen && selectedWorkshop && (
         <div
           style={{
             position: 'fixed',
@@ -336,97 +341,153 @@ export default function WorkshopsPage() {
             left: 0,
             width: '100%',
             height: '100%',
-            backgroundColor: 'rgba(15,23,42,0.9)',
+            backgroundColor: 'rgba(15,23,42,0.85)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 1000,
             backdropFilter: 'blur(10px)',
+            padding: '16px',
           }}
           onClick={() => setIsModalOpen(false)}
         >
           <div
+            dir="rtl"
             style={{
               backgroundColor: 'white',
-              padding: '40px',
-              borderRadius: '30px',
-              width: '90%',
-              maxWidth: '480px',
+              padding: '36px 32px',
+              borderRadius: '28px',
+              width: '100%',
+              maxWidth: '460px',
               position: 'relative',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <span
-              style={{
-                position: 'absolute',
-                insetInlineEnd: '25px',
-                top: '20px',
-                cursor: 'pointer',
-                fontSize: '32px',
-                color: '#94a3b8',
-              }}
+            <button
               onClick={() => setIsModalOpen(false)}
+              style={{ position: 'absolute', insetInlineEnd: '20px', top: '18px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '26px', color: '#94a3b8', lineHeight: 1 }}
             >
               &times;
-            </span>
+            </button>
+
             {!submitted ? (
-              <form
-                action="https://docs.google.com/forms/d/e/1FAIpQLSeQxLhtBb_J2Fq03MXTVoA5Dzp5f1nctoR9-7t6j4LTFNGlSg/formResponse"
-                method="post"
-                target="hidden_iframe"
-                onSubmit={() => setSubmitted(true)}
-              >
-                <h2 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '10px', color: '#0f172a' }}>
-                  {tw.reserveTitle}
+              <>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '6px', color: '#0f172a' }}>
+                  التسجيل في الورشة
                 </h2>
-                <p style={{ color: '#64748b', marginBottom: '30px' }}>
-                  {tw.workshopLabel} <span style={{ color: '#0f172a', fontWeight: 700 }}>{selectedWorkshop}</span>
+                <p style={{ color: '#64748b', marginBottom: '24px', fontSize: '0.9rem' }}>
+                  <span style={{ color: '#0f172a', fontWeight: 700 }}>{selectedWorkshop.title}</span>
                 </p>
-                <div style={{ marginBottom: '25px' }}>
-                  <label style={{ display: 'block', marginBottom: '10px', fontWeight: 700, color: '#1e293b' }}>
-                    {tw.fullName}
-                  </label>
-                  <input
-                    name="entry.1706347372"
-                    required
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: '#1e293b', fontSize: '0.88rem' }}>
+                      الاسم الكامل *
+                    </label>
+                    <input
+                      value={form.name}
+                      onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                      required
+                      placeholder="أدخل اسمك الكامل"
+                      style={{ width: '100%', padding: '13px 14px', border: '2px solid #e2e8f0', borderRadius: '12px', fontSize: '0.95rem', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: '#1e293b', fontSize: '0.88rem' }}>
+                      رقم الهاتف *
+                    </label>
+                    <input
+                      value={form.phone}
+                      onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                      required
+                      type="tel"
+                      placeholder="05xxxxxxxx"
+                      style={{ width: '100%', padding: '13px 14px', border: '2px solid #e2e8f0', borderRadius: '12px', fontSize: '0.95rem', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 700, color: '#1e293b', fontSize: '0.88rem' }}>
+                      البريد الإلكتروني
+                    </label>
+                    <input
+                      value={form.email}
+                      onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                      type="email"
+                      placeholder="example@email.com"
+                      style={{ width: '100%', padding: '13px 14px', border: '2px solid #e2e8f0', borderRadius: '12px', fontSize: '0.95rem', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  {submitError && (
+                    <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', color: '#dc2626', fontSize: '0.84rem' }}>
+                      {submitError}
+                    </div>
+                  )}
+
+                  <button
+                    disabled={submitting || !form.name || !form.phone}
+                    onClick={async () => {
+                      setSubmitting(true);
+                      setSubmitError('');
+                      try {
+                        const res = await fetch('/api/register-workshop', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            workshop_id: selectedWorkshop.id,
+                            workshop_title: selectedWorkshop.title,
+                            name: form.name,
+                            phone: form.phone,
+                            email: form.email || null,
+                          }),
+                        });
+                        if (!res.ok) {
+                          const d = await res.json();
+                          setSubmitError(d.error ?? 'حدث خطأ، حاول مرة أخرى');
+                        } else {
+                          setSubmitted(true);
+                        }
+                      } catch {
+                        setSubmitError('تعذّر الاتصال، تحقق من الإنترنت');
+                      }
+                      setSubmitting(false);
+                    }}
                     style={{
                       width: '100%',
-                      padding: '16px',
-                      border: '2px solid #f1f5f9',
-                      borderRadius: '15px',
+                      padding: '15px',
+                      background: submitting || !form.name || !form.phone ? '#e2e8f0' : '#0f172a',
+                      color: submitting || !form.name || !form.phone ? '#94a3b8' : 'white',
+                      border: 'none',
+                      borderRadius: '14px',
+                      fontWeight: 800,
                       fontSize: '1rem',
-                      outline: 'none',
+                      cursor: submitting || !form.name || !form.phone ? 'not-allowed' : 'pointer',
+                      fontFamily: 'inherit',
+                      marginTop: 4,
                     }}
-                    placeholder={tw.fullNamePlaceholder}
-                  />
+                  >
+                    {submitting ? 'جارٍ التسجيل...' : 'تأكيد التسجيل'}
+                  </button>
                 </div>
-                <button
-                  type="submit"
-                  style={{
-                    width: '100%',
-                    padding: '18px',
-                    background: '#0f172a',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '15px',
-                    fontWeight: 800,
-                    fontSize: '1.1rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {tw.confirmRegistration}
-                </button>
-              </form>
+              </>
             ) : (
-              <div style={{ textAlign: 'center', padding: '20px' }}>
-                <div style={{ fontSize: '5rem', marginBottom: '20px' }}>⭐</div>
-                <h2 style={{ fontWeight: 900, color: '#0f172a', fontSize: '2rem' }}>{tw.successTitle}</h2>
-                <p style={{ color: '#64748b', fontSize: '1.1rem', marginTop: '10px' }}>
-                  {tw.successBody.replace('{title}', selectedWorkshop)}
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <div style={{ fontSize: '4rem', marginBottom: '16px' }}>🎉</div>
+                <h2 style={{ fontWeight: 900, color: '#0f172a', fontSize: '1.6rem', marginBottom: 10 }}>تم التسجيل بنجاح!</h2>
+                <p style={{ color: '#64748b', fontSize: '0.95rem', lineHeight: 1.6 }}>
+                  تم استلام طلبك في ورشة <strong style={{ color: '#0f172a' }}>{selectedWorkshop.title}</strong>.<br />
+                  سنتواصل معك قريباً على رقم الهاتف المُدخل.
                 </p>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  style={{ marginTop: 24, padding: '12px 32px', background: '#0f172a', color: 'white', border: 'none', borderRadius: 12, fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  حسناً
+                </button>
               </div>
             )}
-            <iframe name="hidden_iframe" style={{ display: 'none' }} title="Form submit"></iframe>
           </div>
         </div>
       )}

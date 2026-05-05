@@ -6,13 +6,14 @@ import { supabase } from '@/lib/supabase/client'
 
 const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase())
 
-type AdminTab = 'overview' | 'surveys' | 'users' | 'workshops' | 'consultations' | 'evaluation'
+type AdminTab = 'overview' | 'surveys' | 'users' | 'workshops' | 'registrations' | 'consultations' | 'evaluation'
 
 type Survey     = { id: string; name: string | null; email: string | null; survey_type: string; total_score: number | null; modal_scores: Record<string,unknown> | null; language: string; created_at: string }
 type SiteUser   = { id: string; email: string; created_at: string; user_metadata: { name?: string; phone?: string } }
 type Workshop   = { id: string; name_ar: string; name_en: string | null; description_ar: string | null; category: string | null; duration: string | null; discount_percent: number | null; discount_code: string | null; is_active: boolean; post_assessment_open: boolean }
 type Material   = { id: string; workshop_id: string; name: string; url: string; content_type: string; sort_order: number }
 type Enrollment = { id: string; workshop_id: string; user_id: string | null; user_email: string | null; created_at: string }
+type WsRegistration = { id: string; workshop_id: string | null; workshop_title: string; name: string; phone: string; email: string | null; created_at: string }
 type Consult    = { id: string; user_email: string | null; user_name: string | null; subject: string; message: string; reply: string | null; status: string; created_at: string }
 type EvalSettings = { is_open: boolean }
 type WsEval     = { id: string; user_name: string | null; trainer_rating: number; interaction_rating: number; content_rating: number; facilities_rating: number; benefit_rating: number; comments: string | null; created_at: string }
@@ -24,8 +25,9 @@ const NAV: { key: AdminTab; label: string; icon: string }[] = [
   { key: 'surveys',       label: 'الاختبارات',     icon: '📋' },
   { key: 'users',         label: 'المستخدمون',     icon: '👥' },
   { key: 'workshops',     label: 'الدورات',         icon: '🎓' },
+  { key: 'registrations', label: 'التسجيلات',      icon: '📝' },
   { key: 'consultations', label: 'الاستشارات',      icon: '💬' },
-  { key: 'evaluation',    label: 'تقييم الورشة',   icon: '📝' },
+  { key: 'evaluation',    label: 'تقييم الورشة',   icon: '⭐' },
 ]
 
 const TYPE_AR: Record<string, string> = { riasec: 'اكتشف ميولك', choice: 'جاهزية الاختيار', career: 'المسار المهني' }
@@ -55,6 +57,7 @@ export function AdminDashboardClient() {
   const [workshops, setWorkshops]     = useState<Workshop[]>([])
   const [materials, setMaterials]     = useState<Material[]>([])
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
+  const [wsRegistrations, setWsRegistrations] = useState<WsRegistration[]>([])
   const [consults, setConsults]       = useState<Consult[]>([])
   const [evalSettings, setEvalSettings] = useState<EvalSettings>({ is_open: false })
   const [wsEvals, setWsEvals]         = useState<WsEval[]>([])
@@ -103,6 +106,7 @@ export function AdminDashboardClient() {
     setWorkshops(data.workshops ?? [])
     setMaterials(data.materials ?? [])
     setEnrollments(data.enrollments ?? [])
+    setWsRegistrations(data.wsRegistrations ?? [])
     setConsults(data.consultations ?? [])
     setEvalSettings(data.evalSettings ?? { is_open: false })
     setWsEvals(data.wsEvals ?? [])
@@ -137,6 +141,7 @@ export function AdminDashboardClient() {
   if (!ready) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}><div className="spinner" /></div>
 
   const pendingConsults = consults.filter(c => c.status === 'pending').length
+  const newRegistrations = wsRegistrations.length
 
   // ── Render ──
   return (
@@ -159,6 +164,11 @@ export function AdminDashboardClient() {
               {key === 'consultations' && pendingConsults > 0 && (
                 <span style={{ marginRight: 'auto', background: '#ef4444', color: 'white', fontSize: '0.68rem', borderRadius: 99, padding: '1px 6px', fontWeight: 700 }}>
                   {pendingConsults}
+                </span>
+              )}
+              {key === 'registrations' && newRegistrations > 0 && (
+                <span style={{ marginRight: 'auto', background: '#1e5fdc', color: 'white', fontSize: '0.68rem', borderRadius: 99, padding: '1px 6px', fontWeight: 700 }}>
+                  {newRegistrations}
                 </span>
               )}
             </button>
@@ -577,6 +587,49 @@ export function AdminDashboardClient() {
               </div>
             )}
 
+            {/* ── REGISTRATIONS ── */}
+            {tab === 'registrations' && (
+              <div>
+                <div style={styles.topRow}>
+                  <h2 style={styles.heading}>طلبات التسجيل في الورش ({wsRegistrations.length})</h2>
+                  <button style={styles.btnSecondary} onClick={() => exportRegistrationsCSV(wsRegistrations)}>تصدير CSV</button>
+                </div>
+
+                {wsRegistrations.length === 0 ? (
+                  <div style={{ ...styles.card, textAlign: 'center', padding: 48, color: '#94a3b8' }}>
+                    لا توجد طلبات تسجيل بعد
+                  </div>
+                ) : (
+                  <div style={styles.card}>
+                    <table style={styles.table}>
+                      <thead><tr>
+                        {['الاسم', 'الهاتف', 'البريد', 'الورشة', 'التاريخ'].map(h => <th key={h} style={styles.th}>{h}</th>)}
+                      </tr></thead>
+                      <tbody>
+                        {wsRegistrations.map(r => (
+                          <tr key={r.id} style={styles.tr}>
+                            <td style={{ ...styles.td, fontWeight: 600 }}>{r.name}</td>
+                            <td style={styles.td}>
+                              <a href={`tel:${r.phone}`} style={{ color: '#1e5fdc', textDecoration: 'none', fontWeight: 600 }}>{r.phone}</a>
+                            </td>
+                            <td style={styles.td}>{r.email ?? '—'}</td>
+                            <td style={styles.td}>
+                              <span style={{ background: '#eff6ff', color: '#1e40af', borderRadius: 8, padding: '3px 10px', fontSize: '0.8rem', fontWeight: 600 }}>
+                                {r.workshop_title}
+                              </span>
+                            </td>
+                            <td style={{ ...styles.td, color: '#94a3b8', fontSize: '0.78rem' }}>
+                              {new Date(r.created_at).toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* ── CONSULTATIONS ── */}
             {tab === 'consultations' && (
               <div>
@@ -722,6 +775,17 @@ const styles = {
   btnSecondary:{ background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: '0.84rem' } as React.CSSProperties,
   btnDanger:   { background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 } as React.CSSProperties,
   badge: (color: string) => ({ fontSize: '0.68rem', background: color + '20', color, padding: '2px 8px', borderRadius: 99, fontWeight: 600 }) as React.CSSProperties,
+}
+
+function exportRegistrationsCSV(regs: WsRegistration[]) {
+  const rows = [
+    ['الاسم', 'الهاتف', 'البريد', 'الورشة', 'التاريخ'],
+    ...regs.map(r => [r.name, r.phone, r.email ?? '', r.workshop_title, new Date(r.created_at).toLocaleDateString('ar-SA')]),
+  ]
+  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a'); a.href = url; a.download = `registrations-${new Date().toISOString().slice(0,10)}.csv`; a.click()
 }
 
 function exportCSV(surveys: Survey[]) {
