@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase/client'
 
 // ─── Radar Chart ─────────────────────────────────────────────────────────────
 function RadarChart({ scores, labels, colors }: { scores: number[]; labels: string[]; colors: string[] }) {
@@ -145,6 +146,23 @@ export function InterestsClient() {
     }
     const qs = Object.entries(params).map(([k,v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&')
     fetch(SCRIPT_URL + '?' + qs, { method: 'POST', mode: 'no-cors' }).catch(() => {})
+
+    // حفظ في Supabase
+    supabase.auth.getUser().then(({ data }) => {
+      fetch('/api/surveys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: data.user?.id ?? null,
+          email: data.user?.email ?? null,
+          name,
+          survey_type: 'riasec',
+          total_score: null,
+          modal_scores: s,
+          language: lang,
+        }),
+      }).catch(() => {})
+    })
 
     setTimeout(() => {
       setScores(s)
