@@ -129,7 +129,6 @@ export function AdminDashboardClient() {
     if (type === 'enrollment'){ await adminFetch('/api/admin/enrollments', { method: 'DELETE', body: JSON.stringify({ id }) }); setEnrollments(e => e.filter(x => x.id !== id)) }
     if (type === 'consult')   { await adminFetch('/api/admin/consultations', { method: 'DELETE', body: JSON.stringify({ id }) }); setConsults(c => c.filter(x => x.id !== id)) }
     if (type === 'wseval')    { await adminFetch('/api/submit-evaluation', { method: 'DELETE', body: JSON.stringify({ id }) }); setWsEvals(e => e.filter(x => x.id !== id)) }
-    if (type === 'project')   { await adminFetch('/api/admin/projects', { method: 'DELETE', body: JSON.stringify({ id }) }); setProjects(p => p.filter(x => x.id !== id)); if (selectedProj?.id === id) setSelectedProj(null) }
     setConfirmDel(null)
   }
 
