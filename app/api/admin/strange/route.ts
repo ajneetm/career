@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
 
   const query = supabaseAdmin
     .from('strange_professions')
-    .select('*, strange_profession_votes(id, avg_score)')
+    .select('*, strange_profession_votes(id, avg_score, session_id, created_at)')
     .order('created_at')
 
   if (workshop_id) query.eq('workshop_id', workshop_id)
@@ -41,7 +41,16 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const { id } = await req.json()
+  const { id, vote_id } = await req.json()
+
+  // delete single vote
+  if (vote_id) {
+    const { error } = await supabaseAdmin.from('strange_profession_votes').delete().eq('id', vote_id)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ ok: true })
+  }
+
+  // delete whole profession
   await supabaseAdmin.from('strange_profession_votes').delete().eq('profession_id', id)
   const { error } = await supabaseAdmin.from('strange_professions').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

@@ -16,7 +16,8 @@ type Enrollment = { id: string; workshop_id: string; user_id: string | null; use
 type Consult    = { id: string; user_email: string | null; user_name: string | null; subject: string; message: string; reply: string | null; status: string; created_at: string }
 type EvalSettings = { is_open: boolean }
 type WsEval     = { id: string; user_name: string | null; trainer_rating: number; interaction_rating: number; content_rating: number; facilities_rating: number; benefit_rating: number; comments: string | null; created_at: string }
-type StrangeProf = { id: string; workshop_id: string; name: string; code: string; is_active: boolean; strange_profession_votes: { id: string; avg_score: number }[] }
+type StrangeVote = { id: string; avg_score: number; session_id: string | null; created_at: string }
+type StrangeProf = { id: string; workshop_id: string; name: string; code: string; is_active: boolean; strange_profession_votes: StrangeVote[] }
 
 const NAV: { key: AdminTab; label: string; icon: string }[] = [
   { key: 'overview',      label: 'نظرة عامة',     icon: '📊' },
@@ -81,6 +82,7 @@ export function AdminDashboardClient() {
   const [strangeName, setStrangeName] = useState('')
   const [strangeSaving, setStrangeSaving] = useState(false)
   const [wsPanel, setWsPanel] = useState<'materials' | 'enrollments' | 'strange'>('materials')
+  const [expandedVotes, setExpandedVotes] = useState<string | null>(null)
 
   // add-user form
   const [userForm, setUserForm] = useState({ name: '', email: '', password: '' })
@@ -503,6 +505,40 @@ export function AdminDashboardClient() {
                                   {/* QR */}
                                   <img src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(link)}`}
                                     alt="QR" style={{ width: 80, height: 80, marginTop: 8, borderRadius: 8 }} />
+
+                                  {/* Votes list */}
+                                  {votes.length > 0 && (
+                                    <div style={{ marginTop: 8 }}>
+                                      <button onClick={() => setExpandedVotes(expandedVotes === p.id ? null : p.id)}
+                                        style={{ fontSize: '0.72rem', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+                                        {expandedVotes === p.id ? '▲ إخفاء الأصوات' : `▼ عرض الأصوات (${votes.length})`}
+                                      </button>
+                                      {expandedVotes === p.id && (
+                                        <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                          {votes.map((v, vi) => (
+                                            <div key={v.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', borderRadius: 8, padding: '6px 10px', fontSize: '0.72rem' }}>
+                                              <div style={{ color: '#64748b' }}>
+                                                صوت #{vi + 1}
+                                                <span style={{ color: '#1e5fdc', fontWeight: 700, marginRight: 8 }}>
+                                                  {v.avg_score.toFixed(1)}/5
+                                                </span>
+                                                <span style={{ color: '#94a3b8', marginRight: 8 }}>
+                                                  {new Date(v.created_at).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                              </div>
+                                              <button onClick={async () => {
+                                                await adminFetch('/api/admin/strange', { method: 'DELETE', body: JSON.stringify({ vote_id: v.id }) })
+                                                setStrangeProfessions(ps => ps.map(x => x.id === p.id
+                                                  ? { ...x, strange_profession_votes: x.strange_profession_votes.filter(vt => vt.id !== v.id) }
+                                                  : x
+                                                ))
+                                              }} style={{ ...styles.btnDanger, fontSize: '0.65rem', padding: '2px 6px' }}>حذف</button>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               )
                             })}
