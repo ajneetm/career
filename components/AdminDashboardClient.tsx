@@ -271,7 +271,22 @@ export function AdminDashboardClient() {
               <div>
                 <div style={styles.topRow}>
                   <h2 style={styles.heading}>المستخدمون ({users.length})</h2>
-                  <button style={styles.btnPrimary} onClick={() => setUserFormOpen(true)}>+ مستخدم جديد</button>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button style={styles.btnSecondary} onClick={async () => {
+                      if (!confirm('إعادة تعيين كلمات مرور المستخدمين المُضافين بالـ SQL؟')) return
+                      const { data: { session } } = await supabase.auth.getSession()
+                      const token = session?.access_token ?? ''
+                      const res = await adminFetch('/api/admin/reset-passwords', {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({}),
+                      })
+                      const json = await res.json()
+                      const failed = (json.results ?? []).filter((r: { status: string }) => r.status !== 'ok')
+                      alert(failed.length === 0 ? '✅ تم تحديث كلمات المرور بنجاح' : `⚠️ فشل ${failed.length} مستخدم`)
+                    }}>🔑 إعادة تعيين الكلمات</button>
+                    <button style={styles.btnPrimary} onClick={() => setUserFormOpen(true)}>+ مستخدم جديد</button>
+                  </div>
                 </div>
 
                 {userFormOpen && (

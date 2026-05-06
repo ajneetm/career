@@ -40,18 +40,27 @@ const USERS = [
   { email: 'halghrenaiq@cmc.org.qa',        password: 'Qatar24680@' },
 ]
 
+const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase())
+
 export async function POST(req: NextRequest) {
-  const { secret } = await req.json()
-  if (secret !== process.env.ADMIN_RESET_SECRET) {
+  // Verify caller is an admin via their Supabase session
+  const authHeader = req.headers.get('authorization') ?? ''
+  const token = authHeader.replace('Bearer ', '')
+  if (!token) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+
+  const { data: { user } } = await supabaseAdmin.auth.getUser(token)
+  if (!user || !ADMIN_EMAILS.includes(user.email?.toLowerCase() ?? '')) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
-  // First get all user IDs by email
-  const { data: allUsers, error: listErr } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
+  // Fetch all users via RPC (same as main users route)
+  const { data: rpcUsers, error: listErr } = await supabaseAdmin.rpc('admin_get_users')
   if (listErr) return NextResponse.json({ error: listErr.message }, { status: 500 })
 
+  const allUsers = { users: (rpcUsers ?? []) as { id: string; email: string }[] }
+
   const emailToId: Record<string, string> = {}
-  for (const u of allUsers?.users ?? []) {
+  for (const u of allUsers.users) {
     if (u.email) emailToId[u.email.toLowerCase()] = u.id
   }
 
