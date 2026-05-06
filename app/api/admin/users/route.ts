@@ -2,24 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 
 export async function GET() {
-  // Fetch all pages to support > 1000 users
-  const allUsers: unknown[] = []
-  let page = 1
-  const perPage = 1000
-
-  while (true) {
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage })
-    if (error) {
-      console.error('listUsers error:', error.message)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-    const users = data?.users ?? []
-    allUsers.push(...users)
-    if (users.length < perPage) break
-    page++
+  // Use RPC to bypass Auth Admin API limitations
+  const { data, error } = await supabaseAdmin.rpc('admin_get_users')
+  if (error) {
+    console.error('admin_get_users error:', error.message)
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
-
-  return NextResponse.json(allUsers)
+  return NextResponse.json(data ?? [])
 }
 
 export async function POST(req: NextRequest) {
