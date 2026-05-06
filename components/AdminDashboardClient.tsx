@@ -274,16 +274,25 @@ export function AdminDashboardClient() {
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button style={styles.btnSecondary} onClick={async () => {
                       if (!confirm('إعادة تعيين كلمات مرور المستخدمين المُضافين بالـ SQL؟')) return
-                      const { data: { session } } = await supabase.auth.getSession()
-                      const token = session?.access_token ?? ''
-                      const res = await adminFetch('/api/admin/reset-passwords', {
-                        method: 'POST',
-                        headers: { Authorization: `Bearer ${token}` },
-                        body: JSON.stringify({}),
-                      })
-                      const json = await res.json()
-                      const failed = (json.results ?? []).filter((r: { status: string }) => r.status !== 'ok')
-                      alert(failed.length === 0 ? '✅ تم تحديث كلمات المرور بنجاح' : `⚠️ فشل ${failed.length} مستخدم`)
+                      try {
+                        const { data: { session } } = await supabase.auth.getSession()
+                        const token = session?.access_token ?? ''
+                        const res = await adminFetch('/api/admin/reset-passwords', {
+                          method: 'POST',
+                          headers: { Authorization: `Bearer ${token}` },
+                          body: JSON.stringify({}),
+                        })
+                        const json = await res.json()
+                        if (json.error) { alert('خطأ: ' + json.error); return }
+                        const failed = (json.results ?? []).filter((r: { status: string }) => r.status !== 'ok')
+                        if (failed.length === 0) {
+                          alert('✅ تم تحديث كلمات المرور بنجاح')
+                        } else {
+                          alert(`⚠️ فشل ${failed.length} مستخدم:\n` + failed.map((r: { email: string; status: string }) => `${r.email}: ${r.status}`).join('\n'))
+                        }
+                      } catch (e: any) {
+                        alert('خطأ غير متوقع: ' + e.message)
+                      }
                     }}>🔑 إعادة تعيين الكلمات</button>
                     <button style={styles.btnPrimary} onClick={() => setUserFormOpen(true)}>+ مستخدم جديد</button>
                   </div>
