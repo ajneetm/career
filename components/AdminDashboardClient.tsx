@@ -54,6 +54,7 @@ export function AdminDashboardClient() {
   // data
   const [surveys, setSurveys]         = useState<Survey[]>([])
   const [users, setUsers]             = useState<SiteUser[]>([])
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
   const [workshops, setWorkshops]     = useState<Workshop[]>([])
   const [materials, setMaterials]     = useState<Material[]>([])
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
@@ -319,14 +320,43 @@ export function AdminDashboardClient() {
                   </div>
                 )}
 
+                {selectedUsers.size > 0 && (
+                  <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ fontSize: '0.85rem', color: '#64748b' }}>تم تحديد {selectedUsers.size} مستخدم</span>
+                    <button style={styles.btnDanger} onClick={async () => {
+                      if (!confirm(`حذف ${selectedUsers.size} مستخدم؟`)) return
+                      for (const id of selectedUsers) {
+                        await adminFetch('/api/admin/users', { method: 'DELETE', body: JSON.stringify({ id }) })
+                      }
+                      setUsers(u => u.filter(x => !selectedUsers.has(x.id)))
+                      setSelectedUsers(new Set())
+                    }}>🗑 حذف المحدّدين</button>
+                    <button style={styles.btnSecondary} onClick={() => setSelectedUsers(new Set())}>إلغاء التحديد</button>
+                  </div>
+                )}
+
                 <div style={styles.card}>
                   <table style={styles.table}>
                     <thead><tr>
+                      <th style={styles.th}>
+                        <input type="checkbox"
+                          checked={selectedUsers.size === users.length && users.length > 0}
+                          onChange={e => setSelectedUsers(e.target.checked ? new Set(users.map(u => u.id)) : new Set())} />
+                      </th>
                       {['الاسم', 'البريد', 'تاريخ التسجيل', ''].map(h => <th key={h} style={styles.th}>{h}</th>)}
                     </tr></thead>
                     <tbody>
                       {users.map(u => (
                         <tr key={u.id} style={styles.tr}>
+                          <td style={styles.td}>
+                            <input type="checkbox"
+                              checked={selectedUsers.has(u.id)}
+                              onChange={e => setSelectedUsers(prev => {
+                                const next = new Set(prev)
+                                e.target.checked ? next.add(u.id) : next.delete(u.id)
+                                return next
+                              })} />
+                          </td>
                           <td style={styles.td}>
                             {u.user_metadata?.name ?? u.user_metadata?.full_name ?? '—'}
                             {ADMIN_EMAILS.includes(u.email?.toLowerCase()) && <span style={styles.badge('#6366f1')}>أدمن</span>}
