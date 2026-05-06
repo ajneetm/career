@@ -171,7 +171,7 @@ export const dictionaries: Record<
         role: 'دور',
         effective: 'فعالية',
         esteem: 'تقدير',
-        retire: 'إرث',
+        retire: 'تقاعد',
       },
       intro: [
         { text: 'C4E (Career for Everyone)', tone: 'primary' },

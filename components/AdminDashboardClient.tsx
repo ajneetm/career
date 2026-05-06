@@ -9,7 +9,7 @@ const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? '').split(',').map
 type AdminTab = 'overview' | 'surveys' | 'users' | 'workshops' | 'registrations' | 'consultations' | 'evaluation'
 
 type Survey     = { id: string; name: string | null; email: string | null; survey_type: string; total_score: number | null; modal_scores: Record<string,unknown> | null; language: string; created_at: string }
-type SiteUser   = { id: string; email: string; created_at: string; user_metadata: { name?: string; phone?: string } }
+type SiteUser   = { id: string; email: string; created_at: string; user_metadata: { name?: string; full_name?: string; phone?: string } }
 type Workshop   = { id: string; name_ar: string; name_en: string | null; description_ar: string | null; category: string | null; duration: string | null; discount_percent: number | null; discount_code: string | null; is_active: boolean; post_assessment_open: boolean }
 type Material   = { id: string; workshop_id: string; name: string; url: string; content_type: string; sort_order: number }
 type Enrollment = { id: string; workshop_id: string; user_id: string | null; user_email: string | null; created_at: string }
@@ -96,22 +96,27 @@ export function AdminDashboardClient() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
-    const [dataRes, usersRes] = await Promise.all([
-      adminFetch('/api/admin/data'),
-      adminFetch('/api/admin/users'),
-    ])
-    const data = await dataRes.json()
-    const usersData = await usersRes.json()
-    setSurveys(data.surveys ?? [])
-    setWorkshops(data.workshops ?? [])
-    setMaterials(data.materials ?? [])
-    setEnrollments(data.enrollments ?? [])
-    setWsRegistrations(data.wsRegistrations ?? [])
-    setConsults(data.consultations ?? [])
-    setEvalSettings(data.evalSettings ?? { is_open: false })
-    setWsEvals(data.wsEvals ?? [])
-    setUsers(Array.isArray(usersData) ? usersData : [])
-    setLoading(false)
+    try {
+      const [dataRes, usersRes] = await Promise.all([
+        adminFetch('/api/admin/data'),
+        adminFetch('/api/admin/users'),
+      ])
+      const data = await dataRes.json()
+      const usersData = await usersRes.json()
+      setSurveys(data.surveys ?? [])
+      setWorkshops(data.workshops ?? [])
+      setMaterials(data.materials ?? [])
+      setEnrollments(data.enrollments ?? [])
+      setWsRegistrations(data.wsRegistrations ?? [])
+      setConsults(data.consultations ?? [])
+      setEvalSettings(data.evalSettings ?? { is_open: false })
+      setWsEvals(data.wsEvals ?? [])
+      setUsers(Array.isArray(usersData) ? usersData : [])
+    } catch (err) {
+      console.error('Admin fetchAll error:', err)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => {
@@ -299,7 +304,7 @@ export function AdminDashboardClient() {
                       {users.map(u => (
                         <tr key={u.id} style={styles.tr}>
                           <td style={styles.td}>
-                            {u.user_metadata?.name ?? '—'}
+                            {u.user_metadata?.name ?? u.user_metadata?.full_name ?? '—'}
                             {ADMIN_EMAILS.includes(u.email?.toLowerCase()) && <span style={styles.badge('#6366f1')}>أدمن</span>}
                           </td>
                           <td style={styles.td}>{u.email}</td>
