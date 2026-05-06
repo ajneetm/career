@@ -274,6 +274,26 @@ export function AdminDashboardClient() {
                   <h2 style={styles.heading}>المستخدمون ({users.length})</h2>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button style={styles.btnSecondary} onClick={async () => {
+                      if (!confirm('استيراد 36 مستخدم بكلمة مرور 123456789؟')) return
+                      try {
+                        const { data: { session } } = await supabase.auth.getSession()
+                        const token = session?.access_token ?? ''
+                        const res = await adminFetch('/api/admin/bulk-create', {
+                          method: 'POST',
+                          headers: { Authorization: `Bearer ${token}` },
+                          body: JSON.stringify({}),
+                        })
+                        const json = await res.json()
+                        if (json.error) { alert('خطأ: ' + json.error); return }
+                        const created = (json.results ?? []).filter((r: { status: string }) => r.status === 'created').length
+                        const exists  = (json.results ?? []).filter((r: { status: string }) => r.status === 'exists').length
+                        const failed  = (json.results ?? []).filter((r: { status: string }) => r.status.startsWith('error')).length
+                        alert(`✅ تم إنشاء ${created} مستخدم\n⚠️ موجود مسبقاً: ${exists}\n❌ فشل: ${failed}`)
+                        fetchAll()
+                      } catch (e: any) { alert('خطأ: ' + e.message) }
+                    }}>📥 استيراد المستخدمين</button>
+
+                    <button style={styles.btnSecondary} onClick={async () => {
                       if (!confirm('إعادة تعيين كلمات مرور المستخدمين المُضافين بالـ SQL؟')) return
                       try {
                         const { data: { session } } = await supabase.auth.getSession()
