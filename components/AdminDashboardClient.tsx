@@ -16,7 +16,7 @@ type Enrollment = { id: string; workshop_id: string; user_id: string | null; use
 type WsRegistration = { id: string; workshop_id: string | null; workshop_title: string; name: string; phone: string; email: string | null; created_at: string }
 type Consult    = { id: string; user_email: string | null; user_name: string | null; subject: string; message: string; reply: string | null; status: string; created_at: string }
 type EvalSettings = { is_open: boolean }
-type WsEval     = { id: string; user_name: string | null; trainer_rating: number; interaction_rating: number; content_rating: number; facilities_rating: number; benefit_rating: number; comments: string | null; created_at: string }
+type WsEval     = { id: string; user_name: string | null; trainer_rating: number; interaction_rating: number; content_rating: number; facilities_rating: number; benefit_rating: number; comments: string | null; source: string | null; created_at: string }
 type StrangeVote = { id: string; avg_score: number; session_id: string | null; created_at: string }
 type StrangeProf = { id: string; workshop_id: string; name: string; code: string; is_active: boolean; strange_profession_votes: StrangeVote[] }
 
@@ -769,16 +769,29 @@ export function AdminDashboardClient() {
             {tab === 'evaluation' && (
               <div>
                 <h2 style={styles.heading}>تقييم الورشة</h2>
-                <div style={{ ...styles.card, marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ fontWeight: 600, marginBottom: 4 }}>حالة التقييم</div>
-                    <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{evalSettings.is_open ? '🟢 مفتوح للمستخدمين' : '🔴 مغلق'}</div>
+                <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
+                  {/* Toggle open/close */}
+                  <div style={{ ...styles.card, flex: 1, minWidth: 220, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                    <div>
+                      <div style={{ fontWeight: 600, marginBottom: 4 }}>حالة التقييم</div>
+                      <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{evalSettings.is_open ? '🟢 مفتوح' : '🔴 مغلق'}</div>
+                    </div>
+                    <button style={evalSettings.is_open ? styles.btnDanger : styles.btnPrimary} onClick={async () => {
+                      const newVal = !evalSettings.is_open
+                      await adminFetch('/api/admin/eval-settings', { method: 'PATCH', body: JSON.stringify({ is_open: newVal }) })
+                      setEvalSettings({ is_open: newVal })
+                    }}>{evalSettings.is_open ? 'إغلاق' : 'فتح'}</button>
                   </div>
-                  <button style={evalSettings.is_open ? styles.btnDanger : styles.btnPrimary} onClick={async () => {
-                    const newVal = !evalSettings.is_open
-                    await adminFetch('/api/admin/eval-settings', { method: 'PATCH', body: JSON.stringify({ is_open: newVal }) })
-                    setEvalSettings({ is_open: newVal })
-                  }}>{evalSettings.is_open ? 'إغلاق التقييم' : 'فتح التقييم'}</button>
+                  {/* Public link */}
+                  <div style={{ ...styles.card, flex: 1, minWidth: 220 }}>
+                    <div style={{ fontWeight: 600, marginBottom: 6 }}>رابط التقييم العام</div>
+                    <div style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: 10 }}>شاركه بدون تسجيل دخول</div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input readOnly value={typeof window !== 'undefined' ? `${window.location.origin}/rate` : '/rate'}
+                        style={{ flex: 1, border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '6px 10px', fontSize: '0.8rem', color: '#475569', background: '#f8fafc', outline: 'none' }} />
+                      <button style={styles.btnPrimary} onClick={() => navigator.clipboard.writeText(`${window.location.origin}/rate`)}>نسخ</button>
+                    </div>
+                  </div>
                 </div>
 
                 {wsEvals.length > 0 && (
@@ -798,14 +811,21 @@ export function AdminDashboardClient() {
                 <div style={styles.card}>
                   <table style={styles.table}>
                     <thead><tr>
-                      {['المستخدم', 'مدرّب', 'تفاعل', 'محتوى', 'تجهيزات', 'فائدة', 'التاريخ', ''].map(h => <th key={h} style={styles.th}>{h}</th>)}
+                      {['المشارك', 'مصدر', 'مدرّب', 'تفاعل', 'محتوى', 'تجهيزات', 'فائدة', 'التاريخ', ''].map(h => <th key={h} style={styles.th}>{h}</th>)}
                     </tr></thead>
                     <tbody>
                       {wsEvals.map(e => (
                         <tr key={e.id} style={styles.tr}>
                           <td style={styles.td}>{e.user_name ?? '—'}</td>
+                          <td style={styles.td}>
+                            <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: 99, fontWeight: 600,
+                              background: e.source === 'public' ? '#fef3c7' : '#eff6ff',
+                              color:      e.source === 'public' ? '#92400e' : '#1e40af' }}>
+                              {e.source === 'public' ? 'عام' : 'مسجّل'}
+                            </span>
+                          </td>
                           {[e.trainer_rating, e.interaction_rating, e.content_rating, e.facilities_rating, e.benefit_rating].map((v, i) => (
-                            <td key={i} style={styles.td}><span style={{ fontWeight: 600, color: v >= 4 ? '#16a34a' : v >= 3 ? '#f59e0b' : '#ef4444' }}>{v}⭐</span></td>
+                            <td key={i} style={styles.td}><span style={{ fontWeight: 700, color: v >= 8 ? '#16a34a' : v >= 5 ? '#f59e0b' : '#ef4444' }}>{v}</span></td>
                           ))}
                           <td style={styles.td}>{new Date(e.created_at).toLocaleDateString('ar-SA')}</td>
                           <td style={styles.td}><button style={styles.btnDanger} onClick={() => setConfirmDel({ type: 'wseval', id: e.id, label: e.user_name ?? '' })}>حذف</button></td>

@@ -19,4 +19,5 @@ alter table workshop_evaluations
   add column if not exists interaction_notes text,
   add column if not exists content_notes     text,
   add column if not exists facilities_notes  text,
-  add column if not exists benefit_notes     text;
+  add column if not exists benefit_notes     text,
+  add column if not exists source            text default 'user';

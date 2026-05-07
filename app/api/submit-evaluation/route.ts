@@ -21,18 +21,18 @@ export async function POST(req: NextRequest) {
     user_id, user_name,
     trainer_rating, interaction_rating, content_rating, facilities_rating, benefit_rating,
     trainer_notes, interaction_notes, content_notes, facilities_notes, benefit_notes,
-    comments,
+    comments, source,
   } = body
-
-  if (!user_id) return NextResponse.json({ error: 'user_id required' }, { status: 400 })
 
   const { error } = await supabaseAdmin
     .from('workshop_evaluations')
     .insert({
-      user_id, user_name,
+      user_id: user_id ?? null,
+      user_name,
       trainer_rating, interaction_rating, content_rating, facilities_rating, benefit_rating,
       trainer_notes, interaction_notes, content_notes, facilities_notes, benefit_notes,
       comments,
+      source: source ?? 'user',
     })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
