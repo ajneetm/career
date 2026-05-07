@@ -40,6 +40,11 @@ export function UserDashboardClient() {
   const [reports, setReports]             = useState<SurveyResult[]>([])
   const [consultations, setConsultations] = useState<Consultation[]>([])
 
+  const [newPassword, setNewPassword]       = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [pwSaving, setPwSaving]             = useState(false)
+  const [pwMsg, setPwMsg]                   = useState<{ ok: boolean; text: string } | null>(null)
+
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
@@ -79,6 +84,19 @@ export function UserDashboardClient() {
     await supabase.auth.updateUser({ data: { name, phone } })
     setSaving(false); setSaved(true)
     setTimeout(() => setSaved(false), 3000)
+  }
+
+  async function changePassword(e: React.FormEvent) {
+    e.preventDefault()
+    if (newPassword.length < 6) { setPwMsg({ ok: false, text: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' }); return }
+    if (newPassword !== confirmPassword) { setPwMsg({ ok: false, text: 'كلمتا المرور غير متطابقتين' }); return }
+    setPwSaving(true)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    setPwSaving(false)
+    if (error) { setPwMsg({ ok: false, text: `حدث خطأ: ${error.message}` }); return }
+    setPwMsg({ ok: true, text: '✓ تم تغيير كلمة المرور بنجاح' })
+    setNewPassword(''); setConfirmPassword('')
+    setTimeout(() => setPwMsg(null), 4000)
   }
 
   async function sendConsultation(e: React.FormEvent) {
@@ -244,6 +262,29 @@ export function UserDashboardClient() {
                 {saved && <p style={{ color: '#16a34a', fontSize: '0.85rem', margin: 0 }}>✓ تم الحفظ بنجاح</p>}
                 <button className="btn-primary" type="submit" disabled={saving} style={{ alignSelf: 'flex-start' }}>
                   {saving ? 'جارِ الحفظ...' : 'حفظ التعديلات'}
+                </button>
+              </form>
+            </div>
+
+            {/* Change password */}
+            <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e2e8f0', padding: '20px', marginBottom: 16 }}>
+              <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b', marginBottom: 16 }}>تغيير كلمة المرور</h3>
+              <form onSubmit={changePassword} style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 400 }}>
+                <div className="form-field">
+                  <label>كلمة المرور الجديدة</label>
+                  <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                    placeholder="6 أحرف على الأقل" required dir="ltr" />
+                </div>
+                <div className="form-field">
+                  <label>تأكيد كلمة المرور</label>
+                  <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="أعد كتابة كلمة المرور" required dir="ltr" />
+                </div>
+                {pwMsg && (
+                  <p style={{ fontSize: '0.85rem', margin: 0, color: pwMsg.ok ? '#16a34a' : '#ef4444' }}>{pwMsg.text}</p>
+                )}
+                <button className="btn-primary" type="submit" disabled={pwSaving} style={{ alignSelf: 'flex-start' }}>
+                  {pwSaving ? 'جارِ الحفظ...' : 'تغيير كلمة المرور'}
                 </button>
               </form>
             </div>
