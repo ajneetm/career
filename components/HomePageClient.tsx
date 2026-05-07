@@ -194,12 +194,23 @@ export function HomePageClient() {
                     >
                       🎓 الدخول للورش
                     </Link>
+
+                    <Link
+                      href="/interests"
+                      onClick={() => setActiveStage(null)}
+                      style={{ display: 'block', textAlign: 'center', padding: '11px 13px', background: '#f8fafc', color: '#1e293b', border: '1.5px solid #e2e8f0', borderRadius: 12, textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}
+                    >
+                      🎯 اكتشف ميولك المهنية
+                      <span style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', fontWeight: 400, marginTop: 2 }}>لا يحتاج تسجيل دخول</span>
+                    </Link>
+
                     <Link
                       href={`/assessment/${activeStage.id}`}
                       onClick={() => setActiveStage(null)}
-                      style={{ display: 'block', textAlign: 'center', padding: '13px', background: 'white', color: stage.color, border: `2px solid ${stage.color}`, borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: '0.95rem' }}
+                      style={{ display: 'block', textAlign: 'center', padding: '11px 13px', background: 'white', color: stage.color, border: `2px solid ${stage.color}`, borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: '0.9rem' }}
                     >
                       📊 اكتشف جاهزيتك لهذه المرحلة
+                      <span style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', fontWeight: 400, marginTop: 2 }}>يحتاج تسجيل دخول</span>
                     </Link>
                   </div>
                 </div>
