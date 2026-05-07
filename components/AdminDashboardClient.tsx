@@ -16,7 +16,7 @@ type Enrollment = { id: string; workshop_id: string; user_id: string | null; use
 type WsRegistration = { id: string; workshop_id: string | null; workshop_title: string; name: string; phone: string; email: string | null; created_at: string }
 type Consult    = { id: string; user_email: string | null; user_name: string | null; subject: string; message: string; reply: string | null; status: string; created_at: string }
 type EvalSettings = { is_open: boolean }
-type WsEval     = { id: string; user_name: string | null; trainer_rating: number; interaction_rating: number; content_rating: number; facilities_rating: number; benefit_rating: number; comments: string | null; source: string | null; created_at: string }
+type WsEval     = { id: string; user_name: string | null; workshop_id: string | null; trainer_rating: number; interaction_rating: number; content_rating: number; facilities_rating: number; benefit_rating: number; comments: string | null; source: string | null; created_at: string }
 type StrangeVote = { id: string; avg_score: number; session_id: string | null; created_at: string }
 type StrangeProf = { id: string; workshop_id: string; name: string; code: string; is_active: boolean; strange_profession_votes: StrangeVote[] }
 
@@ -86,7 +86,7 @@ export function AdminDashboardClient() {
   const [strangeProfessions, setStrangeProfessions] = useState<StrangeProf[]>([])
   const [strangeName, setStrangeName] = useState('')
   const [strangeSaving, setStrangeSaving] = useState(false)
-  const [wsPanel, setWsPanel] = useState<'materials' | 'enrollments' | 'strange'>('materials')
+  const [wsPanel, setWsPanel] = useState<'materials' | 'enrollments' | 'strange' | 'evals'>('materials')
   const [expandedVotes, setExpandedVotes] = useState<string | null>(null)
 
   // add-user form
@@ -516,7 +516,7 @@ export function AdminDashboardClient() {
 
                       {/* Panel tabs */}
                       <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid #e2e8f0', paddingBottom: 0 }}>
-                        {([['materials','المواد'], ['enrollments','المسجّلون'], ['strange','المهن الغريبة 🎭']] as const).map(([k, lbl]) => (
+                        {([['materials','المواد'], ['enrollments','المسجّلون'], ['evals','التقييمات'], ['strange','المهن 🎭']] as const).map(([k, lbl]) => (
                           <button key={k} onClick={() => setWsPanel(k)}
                             style={{ padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.78rem', fontWeight: wsPanel === k ? 700 : 400, color: wsPanel === k ? '#1e5fdc' : '#64748b', borderBottom: `2px solid ${wsPanel === k ? '#1e5fdc' : 'transparent'}`, marginBottom: -1 }}>
                             {lbl}
@@ -684,6 +684,57 @@ export function AdminDashboardClient() {
                           </div>
                         </>
                       )}
+
+                      {/* Evaluations panel */}
+                      {wsPanel === 'evals' && (() => {
+                        const wsEvalsFiltered = wsEvals.filter(e => e.workshop_id === selectedWs.id)
+                        const keys: [keyof WsEval, string][] = [
+                          ['trainer_rating','المدرّب'], ['interaction_rating','التفاعل'],
+                          ['content_rating','المحتوى'], ['facilities_rating','التجهيزات'], ['benefit_rating','الفائدة'],
+                        ]
+                        return (
+                          <>
+                            {wsEvalsFiltered.length === 0 ? (
+                              <p style={{ color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center', padding: '24px 0' }}>لا توجد تقييمات بعد</p>
+                            ) : (
+                              <>
+                                {/* Averages */}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6, marginBottom: 14 }}>
+                                  {keys.map(([k, lbl]) => (
+                                    <div key={k} style={{ background: '#f8fafc', borderRadius: 8, padding: '8px 4px', textAlign: 'center' }}>
+                                      <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1e5fdc' }}>{avg(wsEvalsFiltered, k)}</div>
+                                      <div style={{ fontSize: '0.62rem', color: '#64748b' }}>{lbl}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                                {/* Rows */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                  {wsEvalsFiltered.map(e => (
+                                    <div key={e.id} style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 12px', fontSize: '0.78rem' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                        <span style={{ fontWeight: 600, color: '#1e293b' }}>{e.user_name ?? 'مجهول'}</span>
+                                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                          <span style={{ color: '#94a3b8' }}>{new Date(e.created_at).toLocaleDateString('ar-SA')}</span>
+                                          <button style={{ ...styles.btnDanger, fontSize: '0.65rem', padding: '2px 6px' }}
+                                            onClick={() => setConfirmDel({ type: 'wseval', id: e.id, label: e.user_name ?? '' })}>حذف</button>
+                                        </div>
+                                      </div>
+                                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                        {keys.map(([k, lbl]) => (
+                                          <span key={k} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 6, padding: '2px 8px' }}>
+                                            {lbl}: <strong>{String(e[k])}</strong>
+                                          </span>
+                                        ))}
+                                      </div>
+                                      {e.comments && <p style={{ color: '#64748b', margin: '6px 0 0', fontStyle: 'italic' }}>{e.comments}</p>}
+                                    </div>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </>
+                        )
+                      })()}
                     </div>
                   </div>
                 )}

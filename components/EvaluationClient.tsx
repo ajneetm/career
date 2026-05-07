@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
@@ -44,6 +44,8 @@ function NumberRating({ value, onChange }: { value: number; onChange: (v: number
 
 export function EvaluationClient() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const workshopId = searchParams.get('ws')
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [evalOpen, setEvalOpen] = useState(false)
@@ -86,6 +88,7 @@ export function EvaluationClient() {
       body: JSON.stringify({
         user_id: user.id,
         user_name: user.user_metadata?.name ?? user.email,
+        workshop_id: workshopId ?? null,
         trainer_rating:     ratings.trainer,
         interaction_rating: ratings.interaction,
         content_rating:     ratings.content,
@@ -97,6 +100,7 @@ export function EvaluationClient() {
         facilities_notes:  notes.facilities,
         benefit_notes:     notes.benefit,
         comments,
+        source: 'user',
       }),
     })
     setSending(false)

@@ -193,7 +193,7 @@ export function WorkshopsTab({ user }: { user: User }) {
                     <p style={{ color: '#64748b', marginBottom: 20, fontSize: '0.88rem' }}>
                       شاركنا رأيك في الورشة
                     </p>
-                    <Link href="/evaluation" className="btn-primary">تقييم الورشة</Link>
+                    <Link href={`/evaluation?ws=${selected.id}`} className="btn-primary">تقييم الورشة</Link>
                   </>
                 ) : (
                   <>
