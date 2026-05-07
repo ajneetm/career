@@ -15,6 +15,7 @@ type Workshop = {
   discount_code: string | null
   category: string | null
   duration: string | null
+  evaluation_open: boolean
 }
 
 type Material = {
@@ -71,13 +72,12 @@ export function WorkshopsTab({ user }: { user: User }) {
     const enrolled = ids ?? enrolledIds
     if (!enrolled.has(ws.id)) { setMatLoading(false); return }
 
-    const [{ data: mats }, { data: evalSettings }, { data: myEvalRow }] = await Promise.all([
+    const [{ data: mats }, { data: myEvalRow }] = await Promise.all([
       supabase.from('workshop_materials').select('*').eq('workshop_id', ws.id).order('sort_order'),
-      supabase.from('evaluation_settings').select('is_open').eq('id', 1).single(),
       supabase.from('workshop_evaluations').select('id').eq('user_id', user.id).maybeSingle(),
     ])
     setMaterials(mats ?? [])
-    setEvalOpen(evalSettings?.is_open ?? false)
+    setEvalOpen(ws.evaluation_open ?? false)
     setMyEval(!!myEvalRow)
     setMatLoading(false)
   }

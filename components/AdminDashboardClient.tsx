@@ -10,7 +10,7 @@ type AdminTab = 'overview' | 'surveys' | 'users' | 'workshops' | 'registrations'
 
 type Survey     = { id: string; name: string | null; email: string | null; survey_type: string; total_score: number | null; modal_scores: Record<string,unknown> | null; language: string; created_at: string }
 type SiteUser   = { id: string; email: string; created_at: string; user_metadata: { name?: string; full_name?: string; phone?: string } }
-type Workshop   = { id: string; name_ar: string; name_en: string | null; description_ar: string | null; category: string | null; duration: string | null; discount_percent: number | null; discount_code: string | null; is_active: boolean; post_assessment_open: boolean }
+type Workshop   = { id: string; name_ar: string; name_en: string | null; description_ar: string | null; category: string | null; duration: string | null; discount_percent: number | null; discount_code: string | null; is_active: boolean; post_assessment_open: boolean; evaluation_open: boolean }
 type Material   = { id: string; workshop_id: string; name: string; url: string; content_type: string; sort_order: number }
 type Enrollment = { id: string; workshop_id: string; user_id: string | null; user_email: string | null; created_at: string }
 type WsRegistration = { id: string; workshop_id: string | null; workshop_title: string; name: string; phone: string; email: string | null; created_at: string }
@@ -483,10 +483,10 @@ export function AdminDashboardClient() {
                       </div>
 
                       {/* Post assessment toggle */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: selectedWs.post_assessment_open ? '#f0fdf4' : '#f8fafc', borderRadius: 10, padding: '10px 14px', marginBottom: 14, border: `1px solid ${selectedWs.post_assessment_open ? '#bbf7d0' : '#e2e8f0'}` }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: selectedWs.post_assessment_open ? '#f0fdf4' : '#f8fafc', borderRadius: 10, padding: '10px 14px', marginBottom: 10, border: `1px solid ${selectedWs.post_assessment_open ? '#bbf7d0' : '#e2e8f0'}` }}>
                         <div>
                           <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b' }}>الاختبار البعدي</div>
-                          <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{selectedWs.post_assessment_open ? '🟢 مفتوح للمستخدمين' : '🔴 مغلق'}</div>
+                          <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{selectedWs.post_assessment_open ? '🟢 مفتوح' : '🔴 مغلق'}</div>
                         </div>
                         <button onClick={async () => {
                           const next = !selectedWs.post_assessment_open
@@ -495,6 +495,22 @@ export function AdminDashboardClient() {
                           setWorkshops(ws => ws.map(w => w.id === selectedWs.id ? { ...w, post_assessment_open: next } : w))
                         }} style={{ padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.78rem', fontWeight: 700, background: selectedWs.post_assessment_open ? '#ef4444' : '#16a34a', color: 'white' }}>
                           {selectedWs.post_assessment_open ? 'إغلاق' : 'فتح'}
+                        </button>
+                      </div>
+
+                      {/* Evaluation toggle */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: selectedWs.evaluation_open ? '#fffbeb' : '#f8fafc', borderRadius: 10, padding: '10px 14px', marginBottom: 14, border: `1px solid ${selectedWs.evaluation_open ? '#fde68a' : '#e2e8f0'}` }}>
+                        <div>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b' }}>تقييم الورشة</div>
+                          <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{selectedWs.evaluation_open ? '🟢 مفتوح' : '🔴 مغلق'}</div>
+                        </div>
+                        <button onClick={async () => {
+                          const next = !selectedWs.evaluation_open
+                          await adminFetch('/api/admin/workshops', { method: 'PATCH', body: JSON.stringify({ id: selectedWs.id, evaluation_open: next }) })
+                          setSelectedWs(w => w ? { ...w, evaluation_open: next } : w)
+                          setWorkshops(ws => ws.map(w => w.id === selectedWs.id ? { ...w, evaluation_open: next } : w))
+                        }} style={{ padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.78rem', fontWeight: 700, background: selectedWs.evaluation_open ? '#ef4444' : '#f59e0b', color: 'white' }}>
+                          {selectedWs.evaluation_open ? 'إغلاق' : 'فتح'}
                         </button>
                       </div>
 
