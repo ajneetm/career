@@ -123,10 +123,24 @@ export function UserDashboardClient() {
               )}
             </div>
             {reports.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '48px 24px', background: 'white', borderRadius: 16, border: '1px solid #e2e8f0' }}>
+              <div style={{ textAlign: 'center', padding: '32px 24px', background: 'white', borderRadius: 16, border: '1px solid #e2e8f0' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📋</div>
                 <p style={{ color: '#64748b', marginBottom: 20, fontSize: '0.9rem' }}>لم تُكمل أي اختبار بعد</p>
-                <Link href="/interests" className="btn-primary">ابدأ اكتشف ميولك</Link>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, textAlign: 'right' }}>
+                  {[
+                    { href: '/interests',            icon: '🎯', label: 'اكتشف ميولك المهنية' },
+                    { href: '/assessment/choice',    icon: '⚖️', label: 'جاهزية الاختيار' },
+                    { href: '/assessment/adapt',     icon: '🔄', label: 'التكيّف المهني' },
+                    { href: '/assessment/role',      icon: '🧩', label: 'الدور المهني' },
+                    { href: '/assessment/effective', icon: '⚡', label: 'الكفاءة المهنية' },
+                    { href: '/assessment/esteem',    icon: '🌟', label: 'التقدير الذاتي' },
+                    { href: '/assessment/retire',    icon: '🕊️', label: 'التقاعد' },
+                  ].map(({ href, icon, label }) => (
+                    <Link key={href} href={href} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, textDecoration: 'none', color: '#1e40af', fontWeight: 600, fontSize: '0.85rem' }}>
+                      <span>{icon}</span><span>{label}</span>
+                    </Link>
+                  ))}
+                </div>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -234,20 +248,34 @@ export function UserDashboardClient() {
               </form>
             </div>
 
-            {/* Quick links */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <Link href="/interests" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 14, textDecoration: 'none' }}>
-                <span style={{ fontSize: '1.2rem' }}>🎯</span>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.88rem', color: '#1e40af' }}>اكتشف ميولك المهنية</div>
-                  <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: 1 }}>اختبار RIASEC — 24 سؤال</div>
-                </div>
-              </Link>
-              <button onClick={logout} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: 14, cursor: 'pointer', fontFamily: 'inherit', width: '100%', textAlign: 'right' }}>
-                <span style={{ fontSize: '1.2rem' }}>🚪</span>
-                <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#be123c' }}>تسجيل الخروج</span>
-              </button>
+            {/* Quick links — assessments */}
+            <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: 16 }}>
+              <h3 style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1e293b', marginBottom: 12 }}>التقييمات المهنية</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[
+                  { href: '/interests',            icon: '🎯', label: 'اكتشف ميولك المهنية',   sub: 'اختبار RIASEC — 24 سؤال' },
+                  { href: '/assessment/choice',    icon: '⚖️', label: 'جاهزية الاختيار المهني', sub: 'هل أنت مستعد لاتخاذ القرار؟' },
+                  { href: '/assessment/adapt',     icon: '🔄', label: 'التكيّف المهني',         sub: 'قدرتك على التأقلم مع التغيير' },
+                  { href: '/assessment/role',      icon: '🧩', label: 'الدور المهني',           sub: 'اكتشف دورك في بيئة العمل' },
+                  { href: '/assessment/effective', icon: '⚡', label: 'الكفاءة المهنية',        sub: 'قياس فاعليتك وإنتاجيتك' },
+                  { href: '/assessment/esteem',    icon: '🌟', label: 'التقدير الذاتي',         sub: 'مستوى ثقتك بنفسك مهنياً' },
+                  { href: '/assessment/retire',    icon: '🕊️', label: 'التقاعد',               sub: 'جاهزيتك للمرحلة القادمة' },
+                ].map(({ href, icon, label, sub }) => (
+                  <Link key={href} href={href} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, textDecoration: 'none' }}>
+                    <span style={{ fontSize: '1.2rem' }}>{icon}</span>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#1e40af' }}>{label}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: 1 }}>{sub}</div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
+
+            <button onClick={logout} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: 14, cursor: 'pointer', fontFamily: 'inherit', width: '100%', textAlign: 'right' }}>
+              <span style={{ fontSize: '1.2rem' }}>🚪</span>
+              <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#be123c' }}>تسجيل الخروج</span>
+            </button>
           </div>
         )}
       </>
@@ -311,10 +339,21 @@ export function UserDashboardClient() {
           })}
 
           <div style={{ marginTop: 20, padding: '16px 14px 0', borderTop: '1px solid #1e293b' }}>
-            <Link href="/interests" style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#38bdf8', fontSize: '0.82rem', textDecoration: 'none', fontWeight: 600, padding: '6px 0' }}>
-              🎯 <span>اكتشف ميولك</span>
-            </Link>
-            <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#475569', fontSize: '0.82rem', textDecoration: 'none', marginTop: 8, padding: '4px 0' }}>
+            <p style={{ fontSize: '0.68rem', color: '#334155', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>التقييمات</p>
+            {[
+              { href: '/interests',           icon: '🎯', label: 'اكتشف ميولك' },
+              { href: '/assessment/choice',   icon: '⚖️', label: 'جاهزية الاختيار' },
+              { href: '/assessment/adapt',    icon: '🔄', label: 'التكيّف المهني' },
+              { href: '/assessment/role',     icon: '🧩', label: 'الدور المهني' },
+              { href: '/assessment/effective',icon: '⚡', label: 'الكفاءة المهنية' },
+              { href: '/assessment/esteem',   icon: '🌟', label: 'التقدير الذاتي' },
+              { href: '/assessment/retire',   icon: '🕊️', label: 'التقاعد' },
+            ].map(({ href, icon, label }) => (
+              <Link key={href} href={href} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#38bdf8', fontSize: '0.82rem', textDecoration: 'none', fontWeight: 500, padding: '5px 0' }}>
+                <span>{icon}</span> <span>{label}</span>
+              </Link>
+            ))}
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#475569', fontSize: '0.82rem', textDecoration: 'none', marginTop: 10, padding: '4px 0' }}>
               🏠 <span>الرئيسية</span>
             </Link>
           </div>

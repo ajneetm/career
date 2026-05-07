@@ -1,8 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase/client'
 
 // ─── Radar Chart ──────────────────────────────────────────────────────────────
 function RadarChart({ scores, labels, colors }: { scores: number[]; labels: string[]; colors: string[] }) {
@@ -213,13 +215,28 @@ function LikertRow({ value, color, onChange, compact }: {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export function StageAssessmentClient({ stageId }: { stageId: string }) {
   const stage = STAGES[stageId]
+  const router = useRouter()
 
+  const [authChecked, setAuthChecked] = useState(false)
   const [axisIndex, setAxisIndex] = useState(0)
   const [qIndex,    setQIndex]    = useState(0)
   const [answers,   setAnswers]   = useState<number[]>(Array(24).fill(0))
   const [step,      setStep]      = useState<'questions' | 'loading' | 'results'>('questions')
   const [aiReport,  setAiReport]  = useState<{ strengths: string[]; weaknesses: string[]; recommendation: string } | null>(null)
   const [dir,       setDir]       = useState(1)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) router.replace(`/login?next=/assessment/${stageId}`)
+      else setAuthChecked(true)
+    })
+  }, [router, stageId])
+
+  if (!authChecked) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+      <div className="spinner" />
+    </div>
+  )
 
   if (!stage) return <div style={{ textAlign: 'center', padding: 80 }}>مرحلة غير موجودة</div>
 
