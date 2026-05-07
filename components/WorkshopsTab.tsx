@@ -103,7 +103,7 @@ export function WorkshopsTab({ user }: { user: User }) {
     const isEnrolled = enrolledIds.has(selected.id)
     const WS_TABS: { key: WsTab; label: string }[] = [
       { key: 'materials',   label: '📄 المواد' },
-      { key: 'assessments', label: '📋 التقييمات' },
+      { key: 'assessments', label: '📋 القبلي والبعدي' },
       { key: 'evaluation',  label: '⭐ التقييم' },
     ]
     return (

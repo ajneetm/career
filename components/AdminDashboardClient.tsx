@@ -67,6 +67,7 @@ export function AdminDashboardClient() {
   const [replyingId, setReplyingId]       = useState<string | null>(null)
   const [replyText, setReplyText]         = useState('')
   const [confirmDel, setConfirmDel]       = useState<{ type: string; id: string; label: string } | null>(null)
+  const [deleting, setDeleting]           = useState(false)
 
   // add-workshop form
   const [wsForm, setWsForm] = useState({ name_ar: '', name_en: '', description_ar: '', category: '', duration: '', discount_percent: '', discount_code: '' })
@@ -134,14 +135,21 @@ export function AdminDashboardClient() {
   async function confirmDelete() {
     if (!confirmDel) return
     const { type, id } = confirmDel
-    if (type === 'survey')    { await adminFetch('/api/admin/data', { method: 'DELETE', body: JSON.stringify({ id }) }); setSurveys(s => s.filter(x => x.id !== id)) }
-    if (type === 'user')      { await adminFetch('/api/admin/users', { method: 'DELETE', body: JSON.stringify({ id }) }); setUsers(u => u.filter(x => x.id !== id)) }
-    if (type === 'workshop')  { await adminFetch('/api/admin/workshops', { method: 'DELETE', body: JSON.stringify({ id }) }); setWorkshops(w => w.filter(x => x.id !== id)); if (selectedWs?.id === id) setSelectedWs(null) }
-    if (type === 'material')  { await adminFetch('/api/admin/materials', { method: 'DELETE', body: JSON.stringify({ id }) }); setMaterials(m => m.filter(x => x.id !== id)) }
-    if (type === 'enrollment'){ await adminFetch('/api/admin/enrollments', { method: 'DELETE', body: JSON.stringify({ id }) }); setEnrollments(e => e.filter(x => x.id !== id)) }
-    if (type === 'consult')   { await adminFetch('/api/admin/consultations', { method: 'DELETE', body: JSON.stringify({ id }) }); setConsults(c => c.filter(x => x.id !== id)) }
-    if (type === 'wseval')    { await adminFetch('/api/submit-evaluation', { method: 'DELETE', body: JSON.stringify({ id }) }); setWsEvals(e => e.filter(x => x.id !== id)) }
-    setConfirmDel(null)
+    setDeleting(true)
+    try {
+      let ok = true
+      if (type === 'survey')    { const r = await adminFetch('/api/admin/data',           { method: 'DELETE', body: JSON.stringify({ id }) }); ok = r.ok; if (ok) setSurveys(s => s.filter(x => x.id !== id)) }
+      if (type === 'user')      { const r = await adminFetch('/api/admin/users',           { method: 'DELETE', body: JSON.stringify({ id }) }); ok = r.ok; if (ok) setUsers(u => u.filter(x => x.id !== id)) }
+      if (type === 'workshop')  { const r = await adminFetch('/api/admin/workshops',       { method: 'DELETE', body: JSON.stringify({ id }) }); ok = r.ok; if (ok) { setWorkshops(w => w.filter(x => x.id !== id)); if (selectedWs?.id === id) setSelectedWs(null) } }
+      if (type === 'material')  { const r = await adminFetch('/api/admin/materials',       { method: 'DELETE', body: JSON.stringify({ id }) }); ok = r.ok; if (ok) setMaterials(m => m.filter(x => x.id !== id)) }
+      if (type === 'enrollment'){ const r = await adminFetch('/api/admin/enrollments',     { method: 'DELETE', body: JSON.stringify({ id }) }); ok = r.ok; if (ok) setEnrollments(e => e.filter(x => x.id !== id)) }
+      if (type === 'consult')   { const r = await adminFetch('/api/admin/consultations',   { method: 'DELETE', body: JSON.stringify({ id }) }); ok = r.ok; if (ok) setConsults(c => c.filter(x => x.id !== id)) }
+      if (type === 'wseval')    { const r = await adminFetch('/api/submit-evaluation',     { method: 'DELETE', body: JSON.stringify({ id }) }); ok = r.ok; if (ok) setWsEvals(e => e.filter(x => x.id !== id)) }
+      if (!ok) alert('حدث خطأ أثناء الحذف')
+    } finally {
+      setDeleting(false)
+      setConfirmDel(null)
+    }
   }
 
   if (!ready) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}><div className="spinner" /></div>
@@ -845,12 +853,17 @@ export function AdminDashboardClient() {
       {confirmDel && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: 'white', borderRadius: 16, padding: '28px 32px', maxWidth: 360, width: '90%', textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', marginBottom: 12 }}>⚠️</div>
-            <div style={{ fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>تأكيد الحذف</div>
-            <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: 24 }}>{confirmDel.label}</div>
+            <div style={{ fontSize: '2rem', marginBottom: 12 }}>🗑️</div>
+            <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>هل تريد الحذف؟</div>
+            {confirmDel.label && (
+              <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: 4, fontWeight: 500 }}>{confirmDel.label}</div>
+            )}
+            <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: 24 }}>لا يمكن التراجع عن هذا الإجراء</div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-              <button style={styles.btnDanger} onClick={confirmDelete}>حذف</button>
-              <button style={styles.btnSecondary} onClick={() => setConfirmDel(null)}>إلغاء</button>
+              <button style={styles.btnDanger} onClick={confirmDelete} disabled={deleting}>
+                {deleting ? '...' : 'حذف'}
+              </button>
+              <button style={styles.btnSecondary} onClick={() => setConfirmDel(null)} disabled={deleting}>إلغاء</button>
             </div>
           </div>
         </div>
