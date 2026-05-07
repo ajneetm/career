@@ -94,6 +94,8 @@ export function AdminDashboardClient() {
   const [userFormOpen, setUserFormOpen] = useState(false)
   const [userFormSaving, setUserFormSaving] = useState(false)
 
+  const [certModal, setCertModal] = useState<{ name: string; workshop: string; date: string } | null>(null)
+
   const changeTab = (t: AdminTab) => { setTab(t); localStorage.setItem('admin_tab', t) }
 
   const fetchAll = useCallback(async () => {
@@ -554,12 +556,20 @@ export function AdminDashboardClient() {
                       {wsPanel === 'enrollments' && (
                         <>
                           <div style={styles.cardTitle}>المسجّلون</div>
-                          {enrollments.filter(e => e.workshop_id === selectedWs.id).map(e => (
-                            <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.82rem' }}>
-                              <span style={{ color: '#334155' }}>{e.user_email ?? '—'}</span>
-                              <button style={styles.btnDanger} onClick={() => setConfirmDel({ type: 'enrollment', id: e.id, label: e.user_email ?? '' })}>×</button>
-                            </div>
-                          ))}
+                          {enrollments.filter(e => e.workshop_id === selectedWs.id).map(e => {
+                            const u = users.find(u => u.id === e.user_id)
+                            const userName = u?.user_metadata?.name ?? u?.user_metadata?.full_name ?? e.user_email ?? ''
+                            return (
+                              <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.82rem', gap: 6 }}>
+                                <span style={{ color: '#334155', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.user_email ?? '—'}</span>
+                                <button style={{ ...styles.btnPrimary, fontSize: '0.72rem', padding: '3px 8px' }}
+                                  onClick={() => setCertModal({ name: userName, workshop: selectedWs.name_ar, date: new Date().toLocaleDateString('ar-SA') })}>
+                                  🎓
+                                </button>
+                                <button style={styles.btnDanger} onClick={() => setConfirmDel({ type: 'enrollment', id: e.id, label: e.user_email ?? '' })}>×</button>
+                              </div>
+                            )
+                          })}
                           <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
                             <input placeholder="بريد المستخدم" value={enrEmail} onChange={e => setEnrEmail(e.target.value)} style={{ ...styles.input, flex: 1 }} />
                             <button style={styles.btnPrimary} disabled={enrSaving || !enrEmail} onClick={async () => {
@@ -915,6 +925,42 @@ export function AdminDashboardClient() {
           </>
         )}
       </main>
+
+      {/* Certificate Modal */}
+      {certModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'white', borderRadius: 16, padding: '28px 28px 24px', maxWidth: 400, width: '90%' }} dir="rtl">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '1rem' }}>🎓 إصدار شهادة</div>
+              <button onClick={() => setCertModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '1.2rem' }}>×</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 4 }}>اسم المشارك</label>
+                <input value={certModal.name} onChange={e => setCertModal(c => c ? { ...c, name: e.target.value } : c)}
+                  style={{ ...styles.input, width: '100%', boxSizing: 'border-box' }} placeholder="الاسم الكامل" />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 4 }}>الورشة</label>
+                <input value={certModal.workshop} onChange={e => setCertModal(c => c ? { ...c, workshop: e.target.value } : c)}
+                  style={{ ...styles.input, width: '100%', boxSizing: 'border-box' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 4 }}>التاريخ</label>
+                <input value={certModal.date} onChange={e => setCertModal(c => c ? { ...c, date: e.target.value } : c)}
+                  style={{ ...styles.input, width: '100%', boxSizing: 'border-box' }} />
+              </div>
+              <button style={{ ...styles.btnPrimary, width: '100%', padding: '11px', marginTop: 4 }}
+                onClick={() => {
+                  const url = `/certificate?name=${encodeURIComponent(certModal.name)}&workshop=${encodeURIComponent(certModal.workshop)}&date=${encodeURIComponent(certModal.date)}`
+                  window.open(url, '_blank')
+                }}>
+                فتح الشهادة للطباعة ↗
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirm Delete Modal */}
       {confirmDel && (
