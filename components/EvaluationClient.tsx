@@ -7,27 +7,34 @@ import { supabase } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 
 const CRITERIA = [
-  { key: 'trainer_rating',     label: 'المدرّب' },
-  { key: 'interaction_rating', label: 'التفاعل والأنشطة' },
-  { key: 'content_rating',     label: 'المحتوى والمادة' },
-  { key: 'facilities_rating',  label: 'البيئة والتجهيزات' },
-  { key: 'benefit_rating',     label: 'الفائدة العامة' },
+  { key: 'trainer',     label: 'المدرّب' },
+  { key: 'interaction', label: 'التفاعل والأنشطة' },
+  { key: 'content',     label: 'المحتوى والمادة' },
+  { key: 'facilities',  label: 'البيئة والتجهيزات' },
+  { key: 'benefit',     label: 'الفائدة العامة' },
 ]
 
-function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  const [hovered, setHovered] = useState(0)
+function NumberRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
-    <div style={{ display: 'flex', gap: 4 }}>
-      {[1, 2, 3, 4, 5].map(n => (
-        <button key={n} type="button"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.6rem', padding: 2,
-            color: n <= (hovered || value) ? '#f59e0b' : '#e2e8f0', transition: 'color 0.15s' }}
-          onMouseEnter={() => setHovered(n)}
-          onMouseLeave={() => setHovered(0)}
-          onClick={() => onChange(n)}>
-          ★
-        </button>
-      ))}
+    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => {
+        const selected = n === value
+        const color = n <= 4 ? '#ef4444' : n <= 7 ? '#f59e0b' : '#22c55e'
+        return (
+          <button key={n} type="button" onClick={() => onChange(n)}
+            style={{
+              width: 38, height: 38, borderRadius: 8, border: selected ? `2px solid ${color}` : '2px solid #e2e8f0',
+              background: selected ? color : 'white', color: selected ? 'white' : '#64748b',
+              fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.15s',
+              flexShrink: 0,
+            }}>
+            {n}
+          </button>
+        )
+      })}
+      <span style={{ alignSelf: 'center', fontSize: '0.75rem', color: '#94a3b8', marginRight: 4 }}>
+        {value === 0 ? 'اختر تقييماً' : value <= 4 ? 'ضعيف' : value <= 6 ? 'مقبول' : value <= 8 ? 'جيد' : 'ممتاز'}
+      </span>
     </div>
   )
 }
@@ -41,8 +48,10 @@ export function EvaluationClient() {
   const [sending, setSending] = useState(false)
 
   const [ratings, setRatings] = useState<Record<string, number>>({
-    trainer_rating: 0, interaction_rating: 0, content_rating: 0,
-    facilities_rating: 0, benefit_rating: 0,
+    trainer: 0, interaction: 0, content: 0, facilities: 0, benefit: 0,
+  })
+  const [notes, setNotes] = useState<Record<string, string>>({
+    trainer: '', interaction: '', content: '', facilities: '', benefit: '',
   })
   const [comments, setComments] = useState('')
 
@@ -74,7 +83,16 @@ export function EvaluationClient() {
       body: JSON.stringify({
         user_id: user.id,
         user_name: user.user_metadata?.name ?? user.email,
-        ...ratings,
+        trainer_rating:     ratings.trainer,
+        interaction_rating: ratings.interaction,
+        content_rating:     ratings.content,
+        facilities_rating:  ratings.facilities,
+        benefit_rating:     ratings.benefit,
+        trainer_notes:     notes.trainer,
+        interaction_notes: notes.interaction,
+        content_notes:     notes.content,
+        facilities_notes:  notes.facilities,
+        benefit_notes:     notes.benefit,
         comments,
       }),
     })
@@ -89,13 +107,18 @@ export function EvaluationClient() {
   )
 
   return (
-    <div dir="rtl" style={{ maxWidth: 600, margin: '0 auto', padding: '40px 20px 80px' }}>
+    <div dir="rtl" style={{ maxWidth: 620, margin: '0 auto', padding: '40px 20px 80px' }}>
       <div style={{ marginBottom: 24 }}>
         <Link href="/user" style={{ color: '#64748b', textDecoration: 'none', fontSize: '0.85rem' }}>← الداشبورد</Link>
       </div>
 
-      <h1 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0f172a', marginBottom: 6 }}>تقييم الورشة</h1>
-      <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: 28 }}>رأيك يساعدنا على التطوير</p>
+      <h1 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>تقييم الورشة</h1>
+      <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: 8 }}>رأيك يساعدنا على التطوير</p>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 28, fontSize: '0.78rem', color: '#94a3b8' }}>
+        <span><span style={{ color: '#ef4444', fontWeight: 700 }}>1-4</span> ضعيف</span>
+        <span><span style={{ color: '#f59e0b', fontWeight: 700 }}>5-7</span> مقبول–جيد</span>
+        <span><span style={{ color: '#22c55e', fontWeight: 700 }}>8-10</span> ممتاز</span>
+      </div>
 
       {!evalOpen ? (
         <div className="assessment-card" style={{ textAlign: 'center', padding: 48 }}>
@@ -110,22 +133,34 @@ export function EvaluationClient() {
         </div>
       ) : (
         <form onSubmit={submit}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {CRITERIA.map(c => (
-              <div key={c.key} className="assessment-card" style={{ padding: '16px 20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                  <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1e293b' }}>{c.label}</span>
-                  <StarRating value={ratings[c.key]} onChange={v => setRatings(prev => ({ ...prev, [c.key]: v }))} />
-                </div>
+              <div key={c.key} className="assessment-card" style={{ padding: '18px 20px' }}>
+                <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1e293b', marginBottom: 12 }}>{c.label}</p>
+                <NumberRating
+                  value={ratings[c.key]}
+                  onChange={v => setRatings(prev => ({ ...prev, [c.key]: v }))}
+                />
+                <textarea
+                  value={notes[c.key]}
+                  onChange={e => setNotes(prev => ({ ...prev, [c.key]: e.target.value }))}
+                  rows={2}
+                  placeholder="ملاحظاتك على هذا المعيار... (اختياري)"
+                  style={{
+                    marginTop: 12, width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10,
+                    padding: '8px 12px', fontSize: '0.85rem', resize: 'vertical',
+                    fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', color: '#475569',
+                  }}
+                />
               </div>
             ))}
 
             <div className="assessment-card" style={{ padding: '16px 20px' }}>
-              <label style={{ display: 'block', fontWeight: 600, fontSize: '0.9rem', color: '#1e293b', marginBottom: 10 }}>
-                ملاحظات إضافية (اختياري)
+              <label style={{ display: 'block', fontWeight: 700, fontSize: '0.9rem', color: '#1e293b', marginBottom: 10 }}>
+                ملاحظات عامة (اختياري)
               </label>
-              <textarea value={comments} onChange={e => setComments(e.target.value)} rows={4}
-                placeholder="اكتب ملاحظاتك هنا..."
+              <textarea value={comments} onChange={e => setComments(e.target.value)} rows={3}
+                placeholder="أي ملاحظات إضافية تودّ مشاركتها..."
                 style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 10,
                   padding: '10px 14px', fontSize: '0.9rem', resize: 'vertical', fontFamily: 'inherit',
                   outline: 'none', boxSizing: 'border-box' }} />
