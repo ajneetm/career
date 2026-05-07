@@ -1,12 +1,25 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { supabase } from '@/lib/supabase/client'
 
 export function CertificateClient() {
   const params   = useSearchParams()
   const name     = params.get('name')     ?? ''
   const workshop = params.get('workshop') ?? ''
   const date     = params.get('date')     ?? new Date().toLocaleDateString('ar-SA')
+
+  const [templateUrl, setTemplateUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    const { data } = supabase.storage.from('certificates').getPublicUrl('template')
+    if (data?.publicUrl) {
+      fetch(data.publicUrl, { method: 'HEAD' }).then(r => {
+        if (r.ok) setTemplateUrl(data.publicUrl)
+      })
+    }
+  }, [])
 
   return (
     <>
@@ -24,23 +37,27 @@ export function CertificateClient() {
         }
       `}</style>
 
-      <div className="cert" dir="rtl">
+      <div className="cert" dir="rtl" style={templateUrl ? { backgroundImage: `url(${templateUrl})`, backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat' } : {}}>
 
-        {/* Gold border frame */}
-        <div style={{ position: 'absolute', inset: 16, border: '3px solid #b8972a', borderRadius: 4, pointerEvents: 'none', zIndex: 1 }} />
-        <div style={{ position: 'absolute', inset: 22, border: '1px solid #d4af5a', borderRadius: 2, pointerEvents: 'none', zIndex: 1 }} />
+        {!templateUrl && (
+          <>
+            {/* Gold border frame */}
+            <div style={{ position: 'absolute', inset: 16, border: '3px solid #b8972a', borderRadius: 4, pointerEvents: 'none', zIndex: 1 }} />
+            <div style={{ position: 'absolute', inset: 22, border: '1px solid #d4af5a', borderRadius: 2, pointerEvents: 'none', zIndex: 1 }} />
 
-        {/* Corner ornaments */}
-        {[
-          { top: 10, right: 10 }, { top: 10, left: 10 },
-          { bottom: 10, right: 10 }, { bottom: 10, left: 10 },
-        ].map((pos, i) => (
-          <div key={i} style={{ position: 'absolute', width: 40, height: 40, ...pos, zIndex: 2,
-            background: 'radial-gradient(circle, #d4af5a 0%, #b8972a 60%, transparent 70%)', borderRadius: '50%', opacity: 0.8 }} />
-        ))}
+            {/* Corner ornaments */}
+            {[
+              { top: 10, right: 10 }, { top: 10, left: 10 },
+              { bottom: 10, right: 10 }, { bottom: 10, left: 10 },
+            ].map((pos, i) => (
+              <div key={i} style={{ position: 'absolute', width: 40, height: 40, ...pos, zIndex: 2,
+                background: 'radial-gradient(circle, #d4af5a 0%, #b8972a 60%, transparent 70%)', borderRadius: '50%', opacity: 0.8 }} />
+            ))}
 
-        {/* Background watermark */}
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.04, fontSize: '18rem', fontWeight: 900, color: '#1e5fdc', userSelect: 'none', letterSpacing: -20 }}>C4E</div>
+            {/* Background watermark */}
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.04, fontSize: '18rem', fontWeight: 900, color: '#1e5fdc', userSelect: 'none', letterSpacing: -20 }}>C4E</div>
+          </>
+        )}
 
         {/* Content */}
         <div style={{ position: 'relative', zIndex: 3, padding: '52px 72px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 0 }}>

@@ -86,7 +86,7 @@ export function AdminDashboardClient() {
   const [strangeProfessions, setStrangeProfessions] = useState<StrangeProf[]>([])
   const [strangeName, setStrangeName] = useState('')
   const [strangeSaving, setStrangeSaving] = useState(false)
-  const [wsPanel, setWsPanel] = useState<'materials' | 'enrollments' | 'strange' | 'evals'>('materials')
+  const [wsPanel, setWsPanel] = useState<'materials' | 'enrollments' | 'strange' | 'evals' | 'cert'>('materials')
   const [expandedVotes, setExpandedVotes] = useState<string | null>(null)
 
   // add-user form
@@ -95,6 +95,10 @@ export function AdminDashboardClient() {
   const [userFormSaving, setUserFormSaving] = useState(false)
 
   const [certModal, setCertModal] = useState<{ name: string; workshop: string; date: string } | null>(null)
+
+  // certificate template
+  const [certTemplateUrl, setCertTemplateUrl] = useState<string | null>(null)
+  const [certUploading, setCertUploading] = useState(false)
 
   const changeTab = (t: AdminTab) => { setTab(t); localStorage.setItem('admin_tab', t) }
 
@@ -130,6 +134,12 @@ export function AdminDashboardClient() {
       }
       setReady(true)
       fetchAll()
+      const { data: urlData } = supabase.storage.from('certificates').getPublicUrl('template')
+      if (urlData?.publicUrl) {
+        fetch(urlData.publicUrl, { method: 'HEAD' }).then(r => {
+          if (r.ok) setCertTemplateUrl(urlData.publicUrl)
+        })
+      }
     })
   }, [router, fetchAll])
 
@@ -518,7 +528,7 @@ export function AdminDashboardClient() {
 
                       {/* Panel tabs */}
                       <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid #e2e8f0', paddingBottom: 0 }}>
-                        {([['materials','المواد'], ['enrollments','المسجّلون'], ['evals','التقييمات'], ['strange','المهن 🎭']] as const).map(([k, lbl]) => (
+                        {([['materials','المواد'], ['enrollments','المسجّلون'], ['evals','التقييمات'], ['strange','المهن 🎭'], ['cert','الشهادة 🏅']] as const).map(([k, lbl]) => (
                           <button key={k} onClick={() => setWsPanel(k)}
                             style={{ padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.78rem', fontWeight: wsPanel === k ? 700 : 400, color: wsPanel === k ? '#1e5fdc' : '#64748b', borderBottom: `2px solid ${wsPanel === k ? '#1e5fdc' : 'transparent'}`, marginBottom: -1 }}>
                             {lbl}
@@ -692,6 +702,68 @@ export function AdminDashboardClient() {
                               setStrangeSaving(false)
                             }}>{strangeSaving ? '...' : 'إضافة'}</button>
                           </div>
+                        </>
+                      )}
+
+                      {/* Certificate template panel */}
+                      {wsPanel === 'cert' && (
+                        <>
+                          <div style={styles.cardTitle}>قالب الشهادة</div>
+                          <p style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: 12, lineHeight: 1.7 }}>
+                            ارفع صورة قالب الشهادة (PNG أو JPG). ستُستخدم كخلفية لجميع الشهادات المولّدة.
+                            <br />
+                            <span style={{ color: '#f59e0b', fontWeight: 600 }}>
+                              تأكد من إنشاء bucket باسم &quot;certificates&quot; في Supabase Storage (Public).
+                            </span>
+                          </p>
+
+                          {certTemplateUrl && (
+                            <div style={{ marginBottom: 14 }}>
+                              <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: 6 }}>القالب الحالي:</div>
+                              <img
+                                src={certTemplateUrl}
+                                alt="certificate template"
+                                style={{ width: '100%', borderRadius: 8, border: '1px solid #e2e8f0', objectFit: 'contain', maxHeight: 200 }}
+                                onError={() => setCertTemplateUrl(null)}
+                              />
+                              <a
+                                href={`/certificate?name=اسم+تجريبي&workshop=${encodeURIComponent(selectedWs.name_ar)}&date=${new Date().toLocaleDateString('ar-SA')}`}
+                                target="_blank" rel="noopener noreferrer"
+                                style={{ ...styles.btnSecondary, display: 'inline-block', marginTop: 8, fontSize: '0.78rem', textDecoration: 'none' }}>
+                                👁 معاينة الشهادة
+                              </a>
+                            </div>
+                          )}
+
+                          <label style={{ display: 'block' }}>
+                            <div style={{ ...styles.btnPrimary, display: 'inline-block', cursor: 'pointer', fontSize: '0.82rem', opacity: certUploading ? 0.6 : 1 }}>
+                              {certUploading ? 'جارِ الرفع...' : '📁 اختر ملف القالب'}
+                            </div>
+                            <input type="file" accept="image/*" style={{ display: 'none' }} disabled={certUploading}
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0]
+                                if (!file) return
+                                setCertUploading(true)
+                                try {
+                                  const { error } = await supabase.storage.from('certificates').upload('template', file, { upsert: true, contentType: file.type })
+                                  if (error) { alert('خطأ في الرفع: ' + error.message); return }
+                                  const { data: urlData } = supabase.storage.from('certificates').getPublicUrl('template')
+                                  setCertTemplateUrl(`${urlData.publicUrl}?t=${Date.now()}`)
+                                } finally {
+                                  setCertUploading(false)
+                                  e.target.value = ''
+                                }
+                              }}
+                            />
+                          </label>
+
+                          {certTemplateUrl && (
+                            <button style={{ ...styles.btnDanger, marginTop: 10, fontSize: '0.78rem' }} onClick={async () => {
+                              if (!confirm('حذف قالب الشهادة؟')) return
+                              await supabase.storage.from('certificates').remove(['template'])
+                              setCertTemplateUrl(null)
+                            }}>🗑 حذف القالب</button>
+                          )}
                         </>
                       )}
 
