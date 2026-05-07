@@ -186,31 +186,23 @@ export function HomePageClient() {
                   </div>
 
                   {/* Buttons */}
+                  <style>{`
+                    .stage-btn { display: block; text-align: center; padding: 12px 16px; background: white; color: #1e293b; border: 1.5px solid #e2e8f0; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: background 0.18s, color 0.18s, border-color 0.18s; }
+                    .stage-btn:hover { background: #1e5fdc; color: white; border-color: #1e5fdc; }
+                    .stage-btn:hover .stage-btn-sub { color: rgba(255,255,255,0.7); }
+                    .stage-btn-sub { display: block; font-size: 0.72rem; color: #94a3b8; font-weight: 400; margin-top: 2px; transition: color 0.18s; }
+                  `}</style>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <Link
-                      href={`/workshops?category=${activeStage.id}`}
-                      onClick={() => setActiveStage(null)}
-                      style={{ display: 'block', textAlign: 'center', padding: '13px', background: stage.color, color: 'white', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: '0.95rem' }}
-                    >
-                      🎓 الدخول للورش
+                    <Link href={`/workshops?category=${activeStage.id}`} onClick={() => setActiveStage(null)} className="stage-btn">
+                      الدخول للورش
                     </Link>
-
-                    <Link
-                      href="/interests"
-                      onClick={() => setActiveStage(null)}
-                      style={{ display: 'block', textAlign: 'center', padding: '11px 13px', background: '#f8fafc', color: '#1e293b', border: '1.5px solid #e2e8f0', borderRadius: 12, textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}
-                    >
-                      🎯 اكتشف ميولك المهنية
-                      <span style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', fontWeight: 400, marginTop: 2 }}>لا يحتاج تسجيل دخول</span>
+                    <Link href="/interests" onClick={() => setActiveStage(null)} className="stage-btn">
+                      اكتشف ميولك المهنية
+                      <span className="stage-btn-sub">لا يحتاج تسجيل دخول</span>
                     </Link>
-
-                    <Link
-                      href={`/assessment/${activeStage.id}`}
-                      onClick={() => setActiveStage(null)}
-                      style={{ display: 'block', textAlign: 'center', padding: '11px 13px', background: 'white', color: stage.color, border: `2px solid ${stage.color}`, borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: '0.9rem' }}
-                    >
-                      📊 اكتشف جاهزيتك لهذه المرحلة
-                      <span style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', fontWeight: 400, marginTop: 2 }}>يحتاج تسجيل دخول</span>
+                    <Link href={`/assessment/${activeStage.id}`} onClick={() => setActiveStage(null)} className="stage-btn">
+                      اكتشف جاهزيتك لهذه المرحلة
+                      <span className="stage-btn-sub">يحتاج تسجيل دخول</span>
                     </Link>
                   </div>
                 </div>
