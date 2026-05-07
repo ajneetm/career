@@ -15,13 +15,12 @@ function NumberRating({ value, onChange }: { value: number; onChange: (v: number
     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => {
         const selected = n === value
-        const color = n <= 4 ? '#ef4444' : n <= 7 ? '#f59e0b' : '#22c55e'
         return (
           <button key={n} type="button" onClick={() => onChange(n)}
             style={{
               width: 38, height: 38, borderRadius: 8,
-              border: selected ? `2px solid ${color}` : '2px solid #e2e8f0',
-              background: selected ? color : 'white',
+              border: selected ? '2px solid #1e5fdc' : '2px solid #e2e8f0',
+              background: selected ? '#1e5fdc' : 'white',
               color: selected ? 'white' : '#64748b',
               fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
               transition: 'all 0.15s', flexShrink: 0,
@@ -30,9 +29,11 @@ function NumberRating({ value, onChange }: { value: number; onChange: (v: number
           </button>
         )
       })}
-      <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-        {value === 0 ? 'اختر تقييماً' : value <= 4 ? 'ضعيف' : value <= 6 ? 'مقبول' : value <= 8 ? 'جيد' : 'ممتاز'}
-      </span>
+      {value > 0 && (
+        <span style={{ fontSize: '0.75rem', color: '#64748b', marginRight: 4 }}>
+          {value <= 4 ? 'ضعيف' : value <= 6 ? 'مقبول' : value <= 8 ? 'جيد' : 'ممتاز'}
+        </span>
+      )}
     </div>
   )
 }
@@ -99,11 +100,6 @@ export function PublicEvaluationClient() {
           <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>📝</div>
           <h1 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>تقييم الورشة</h1>
           <p style={{ color: '#64748b', fontSize: '0.88rem' }}>رأيك يساعدنا على تطوير تجربتك المهنية</p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginTop: 12, fontSize: '0.78rem', color: '#94a3b8' }}>
-            <span><span style={{ color: '#ef4444', fontWeight: 700 }}>1-4</span> ضعيف</span>
-            <span><span style={{ color: '#f59e0b', fontWeight: 700 }}>5-7</span> مقبول–جيد</span>
-            <span><span style={{ color: '#22c55e', fontWeight: 700 }}>8-10</span> ممتاز</span>
-          </div>
         </div>
 
         {!evalOpen ? (
