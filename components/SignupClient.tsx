@@ -1,17 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 
 export function SignupClient() {
-  const router = useRouter()
   const [name, setName]         = useState('')
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
+  const [sent, setSent]         = useState(false)
+  const [sentEmail, setSentEmail] = useState('')
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
@@ -41,17 +41,60 @@ export function SignupClient() {
       return
     }
 
-    // session is null when email confirmation is required
+    // No session = email confirmation required
     if (!data.session) {
+      setSentEmail(email)
+      setSent(true)
       setLoading(false)
-      setError('') // clear error
-      // show confirmation message instead
-      alert('تم إنشاء الحساب! تحقق من بريدك الإلكتروني وأكّد حسابك ثم سجّل دخولك.')
-      router.push('/login')
       return
     }
 
     window.location.href = '/user'
+  }
+
+  if (sent) {
+    return (
+      <div className="assessment-page" dir="rtl" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <div style={{ width: '100%', maxWidth: 440, padding: '0 20px' }}>
+          <div className="assessment-card" style={{ textAlign: 'center' }}>
+
+            <div style={{ fontSize: '4rem', marginBottom: 16 }}>📬</div>
+
+            <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', marginBottom: 10 }}>
+              تم تسجيل حسابك بنجاح!
+            </h1>
+
+            <p style={{ fontSize: '0.95rem', color: '#475569', marginBottom: 8 }}>
+              أرسلنا رسالة تأكيد إلى:
+            </p>
+            <p style={{ fontWeight: 700, color: '#1e5fdc', fontSize: '1rem', marginBottom: 24, direction: 'ltr' }}>
+              {sentEmail}
+            </p>
+
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: '16px 20px', textAlign: 'right', marginBottom: 24 }}>
+              <p style={{ fontSize: '0.88rem', color: '#475569', marginBottom: 8, fontWeight: 600 }}>خطوات التفعيل:</p>
+              <ol style={{ fontSize: '0.85rem', color: '#64748b', paddingRight: 20, margin: 0, lineHeight: 2 }}>
+                <li>افتح بريدك الإلكتروني</li>
+                <li>ابحث عن رسالة من Career For Everyone</li>
+                <li>اضغط على رابط التأكيد</li>
+                <li>سجّل دخولك وابدأ رحلتك المهنية</li>
+              </ol>
+            </div>
+
+            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '12px 16px', marginBottom: 24, textAlign: 'right' }}>
+              <p style={{ fontSize: '0.83rem', color: '#92400e', margin: 0 }}>
+                💡 لم تجد الرسالة؟ تحقق من مجلد <strong>Spam</strong> أو <strong>Junk</strong>
+              </p>
+            </div>
+
+            <Link href="/login" style={{ display: 'block', padding: '13px', background: '#1e5fdc', color: 'white', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: '0.95rem' }}>
+              الذهاب لتسجيل الدخول
+            </Link>
+
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -65,37 +108,17 @@ export function SignupClient() {
           <form onSubmit={handleSignup} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="form-field">
               <label>الاسم الكامل</label>
-              <input
-                type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="أحمد محمد"
-                required
-              />
+              <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="أحمد محمد" required />
             </div>
 
             <div className="form-field">
               <label>البريد الإلكتروني</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="example@email.com"
-                required
-                dir="ltr"
-              />
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="example@email.com" required dir="ltr" />
             </div>
 
             <div className="form-field">
               <label>كلمة المرور</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="6 أحرف على الأقل"
-                required
-                dir="ltr"
-              />
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="6 أحرف على الأقل" required dir="ltr" />
             </div>
 
             {error && <p className="error-msg">{error}</p>}
