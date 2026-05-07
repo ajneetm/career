@@ -27,7 +27,7 @@ const NAV: { key: AdminTab; label: string; icon: string }[] = [
   { key: 'workshops',     label: 'الدورات',         icon: '🎓' },
   { key: 'registrations', label: 'التسجيلات',      icon: '📝' },
   { key: 'consultations', label: 'الاستشارات',      icon: '💬' },
-  { key: 'evaluation',    label: 'تقييم الورشة',   icon: '⭐' },
+  { key: 'evaluation',    label: 'التقييم العام',   icon: '⭐' },
 ]
 
 const TYPE_AR: Record<string, string> = { riasec: 'اكتشف ميولك', choice: 'جاهزية الاختيار', career: 'المسار المهني' }
@@ -843,7 +843,7 @@ export function AdminDashboardClient() {
             {/* ── EVALUATION ── */}
             {tab === 'evaluation' && (
               <div>
-                <h2 style={styles.heading}>تقييم الورشة</h2>
+                <h2 style={styles.heading}>التقييم العام <span style={{ fontSize: '0.75rem', fontWeight: 400, color: '#94a3b8' }}>— يتحكم بصفحة /rate بدون تسجيل دخول</span></h2>
                 <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
                   {/* Toggle open/close */}
                   <div style={{ ...styles.card, flex: 1, minWidth: 220, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
