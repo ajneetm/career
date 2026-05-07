@@ -190,7 +190,7 @@ export function HomePageClient() {
                     .stage-btn { display: block; text-align: center; padding: 12px 16px; background: white; color: #1e293b; border: 1.5px solid #e2e8f0; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: background 0.18s, color 0.18s, border-color 0.18s; }
                     .stage-btn:hover { background: #1e5fdc; color: white; border-color: #1e5fdc; }
                     .stage-btn:hover .stage-btn-sub { color: rgba(255,255,255,0.7); }
-                    .stage-btn-sub { display: block; font-size: 0.72rem; color: #94a3b8; font-weight: 400; margin-top: 2px; transition: color 0.18s; }
+                    .stage-btn-sub { display: block; font-size: 0.72rem; color: #ef4444; font-weight: 500; margin-top: 2px; transition: color 0.18s; }
                   `}</style>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <Link href={`/workshops?category=${activeStage.id}`} onClick={() => setActiveStage(null)} className="stage-btn">
