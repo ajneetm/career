@@ -100,7 +100,7 @@ export const dictionaries: Record<
       cpdTitle: 'Where are you in your career path?',
       cpdSubtitle: 'Discover your career path today — identify your strengths and what you need to achieve your professional ambitions.',
       cpdBadge: 'Build your career path with high-quality CPD',
-      cpdWorkshop: 'We help you understand your career path, discover your opportunities, and define your next steps through a 4-hour CPD-accredited practical workshop.',
+      cpdWorkshop: 'Confirm your professional interests, discover your strengths and future career opportunities, and build an inspiring and motivating future.',
       cpdBtn: 'Where are you in your career path?',
       cpdTagline: 'Join the workshop to define your career path — from Choice to Esteem — CPD Certified',
       joinUs: 'Join Us',
