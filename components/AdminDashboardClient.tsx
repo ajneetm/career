@@ -853,18 +853,19 @@ function WorkshopDetail({
             </div>
           </div>
           {/* Toggles */}
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 200 }}>
             {([
-              { label: 'الاختبار البعدي', key: 'post_assessment_open' as const, activeColor: '#16a34a', activeBg: '#dcfce7' },
-              { label: 'تقييم الورشة',   key: 'evaluation_open'     as const, activeColor: '#b45309', activeBg: '#fef9c3' },
-            ]).map(({ label, key, activeColor, activeBg }) => {
+              { label: 'الاختبار البعدي', key: 'post_assessment_open' as const, color: '#16a34a' },
+              { label: 'تقييم الورشة',   key: 'evaluation_open'     as const, color: '#2563eb' },
+            ]).map(({ label, key, color }) => {
               const on = ws[key]
               return (
-                <button key={key} onClick={() => onToggle(key)}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '10px 18px', borderRadius: 12, border: `1.5px solid ${on ? activeColor + '50' : '#e2e8f0'}`, background: on ? activeBg : '#f8fafc', cursor: 'pointer', fontFamily: 'inherit' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: on ? activeColor : '#94a3b8' }}>{label}</span>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: on ? activeColor : '#cbd5e1' }}>{on ? '● مفتوح' : '○ مغلق'}</span>
-                </button>
+                <div key={key} onClick={() => onToggle(key)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 12px', borderRadius: 10, background: on ? '#f0fdf4' : '#f8fafc', border: `1px solid ${on ? color + '30' : '#e2e8f0'}`, cursor: 'pointer', userSelect: 'none' }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: on ? '#1e293b' : '#94a3b8' }}>{label}</span>
+                  <div style={{ width: 40, height: 22, borderRadius: 11, background: on ? color : '#cbd5e1', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+                    <div style={{ width: 16, height: 16, borderRadius: '50%', background: 'white', position: 'absolute', top: 3, left: on ? 21 : 3, transition: 'left 0.18s', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
+                  </div>
+                </div>
               )
             })}
           </div>
