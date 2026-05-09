@@ -430,6 +430,60 @@ export function AdminDashboardClient() {
             {/* ── WORKSHOPS ── */}
             {tab === 'workshops' && (
               <div>
+                {/* ── Workshop detail view (drill-down) ── */}
+                {selectedWs ? (
+                  <WorkshopDetail
+                    ws={selectedWs}
+                    materials={materials} enrollments={enrollments} wsEvals={wsEvals}
+                    users={users} strangeProfessions={strangeProfessions} expandedVotes={expandedVotes}
+                    wsPanel={wsPanel} matForm={matForm} matFormSaving={matFormSaving}
+                    enrEmail={enrEmail} enrSaving={enrSaving} strangeName={strangeName} strangeSaving={strangeSaving}
+                    certUrls={certUrls}
+                    onBack={() => setSelectedWs(null)}
+                    onDelete={(type, id, label) => setConfirmDel({ type, id, label })}
+                    onToggle={async (key) => {
+                      const next = !selectedWs[key]
+                      await adminFetch('/api/admin/workshops', { method: 'PATCH', body: JSON.stringify({ id: selectedWs.id, [key]: next }) })
+                      setSelectedWs(w => w ? { ...w, [key]: next } : w)
+                      setWorkshops(ws => ws.map(w => w.id === selectedWs.id ? { ...w, [key]: next } : w))
+                    }}
+                    onPanelChange={setWsPanel}
+                    onMatFormChange={v => setMatForm(f => ({ ...f, ...v }))}
+                    onMatAdd={async () => {
+                      setMatFormSaving(true)
+                      const res = await adminFetch('/api/admin/materials', { method: 'POST', body: JSON.stringify({ ...matForm, workshop_id: selectedWs.id }) })
+                      if (res.ok) { const d = await res.json(); setMaterials(m => [...m, { ...matForm, id: d.id, workshop_id: selectedWs.id, sort_order: 0 }]); setMatForm({ name: '', url: '', content_type: 'file' }) }
+                      setMatFormSaving(false)
+                    }}
+                    onEnrEmailChange={setEnrEmail}
+                    onEnrAdd={async () => {
+                      setEnrSaving(true)
+                      const res = await adminFetch('/api/admin/enrollments', { method: 'POST', body: JSON.stringify({ workshop_id: selectedWs.id, user_email: enrEmail }) })
+                      if (res.ok) { fetchAll(); setEnrEmail('') }
+                      setEnrSaving(false)
+                    }}
+                    onCertUrlChange={(id, url) => setCertUrls(prev => ({ ...prev, [id]: url }))}
+                    onCertUrlSave={async (id) => {
+                      const url = certUrls[id]?.trim() ?? ''
+                      const res = await adminFetch('/api/admin/enrollments', { method: 'PATCH', body: JSON.stringify({ id, cert_url: url || null }) })
+                      if (res.ok) setEnrollments(prev => prev.map(x => x.id === id ? { ...x, cert_url: url || null } : x))
+                    }}
+                    onStrangeNameChange={setStrangeName}
+                    onStrangeAdd={async () => {
+                      setStrangeSaving(true)
+                      const res = await adminFetch('/api/admin/strange', { method: 'POST', body: JSON.stringify({ workshop_id: selectedWs.id, name: strangeName }) })
+                      if (res.ok) { const d = await res.json(); setStrangeProfessions(ps => [...ps, { id: d.id, workshop_id: selectedWs.id, name: strangeName, code: d.code, is_active: true, strange_profession_votes: [] }]); setStrangeName('') }
+                      setStrangeSaving(false)
+                    }}
+                    onStrangeDelete={(id) => { setStrangeProfessions(ps => ps.filter(x => x.id !== id)); adminFetch('/api/admin/strange', { method: 'DELETE', body: JSON.stringify({ id }) }) }}
+                    onVoteDelete={(profId, voteId) => {
+                      adminFetch('/api/admin/strange', { method: 'DELETE', body: JSON.stringify({ vote_id: voteId }) })
+                      setStrangeProfessions(ps => ps.map(x => x.id === profId ? { ...x, strange_profession_votes: x.strange_profession_votes.filter(v => v.id !== voteId) } : x))
+                    }}
+                    onExpandVotes={setExpandedVotes}
+                  />
+                ) : (
+                <>
                 {/* Header + search */}
                 <div style={styles.topRow}>
                   <h2 style={styles.heading}>الدورات ({workshops.length})</h2>
@@ -469,9 +523,9 @@ export function AdminDashboardClient() {
                     const wsMats = materials.filter(m => m.workshop_id === ws.id)
                     const wsEvCount = wsEvals.filter(e => e.workshop_id === ws.id).length
                     return (
-                      <div key={ws.id} style={{ ...styles.card, cursor: 'pointer', border: `2px solid ${selectedWs?.id === ws.id ? '#1e5fdc' : 'transparent'}`, transition: 'border-color 0.15s' }}
+                      <div key={ws.id} style={{ ...styles.card, cursor: 'pointer', border: '2px solid transparent', transition: 'border-color 0.15s' }}
                         onClick={() => {
-                          const next = selectedWs?.id === ws.id ? null : ws
+                          const next = ws
                           setSelectedWs(next)
                           setWsPanel('materials')
                           if (next) fetch(`/api/admin/strange?workshop_id=${next.id}`).then(r => r.json()).then(setStrangeProfessions)
@@ -506,283 +560,8 @@ export function AdminDashboardClient() {
                   })}
                 </div>
 
-                {/* Workshop drawer */}
-                {selectedWs && (
-                  <>
-                    {/* Backdrop */}
-                    <div onClick={() => setSelectedWs(null)}
-                      style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.35)', zIndex: 200 }} />
-                    {/* Drawer panel */}
-                    <div style={{ position: 'fixed', top: 0, left: 0, height: '100vh', width: 520, zIndex: 201, background: 'white', boxShadow: '4px 0 32px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-
-                      {/* Drawer header */}
-                      <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-                        <button onClick={() => setSelectedWs(null)}
-                          style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', flexShrink: 0 }}>
-                          ×
-                        </button>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0f172a' }}>{selectedWs.name_ar}</div>
-                          {selectedWs.category && <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 2 }}>{selectedWs.category}</div>}
-                        </div>
-                      </div>
-
-                      {/* Toggles */}
-                      <div style={{ padding: '16px 24px', display: 'flex', gap: 10, borderBottom: '1px solid #f1f5f9', flexShrink: 0 }}>
-                        {[
-                          { label: 'الاختبار البعدي', key: 'post_assessment_open' as const, activeColor: '#16a34a', activeBg: '#dcfce7' },
-                          { label: 'تقييم الورشة',   key: 'evaluation_open'     as const, activeColor: '#b45309', activeBg: '#fef9c3' },
-                        ].map(({ label, key, activeColor, activeBg }) => {
-                          const on = selectedWs[key]
-                          return (
-                            <button key={key} onClick={async () => {
-                              const next = !on
-                              await adminFetch('/api/admin/workshops', { method: 'PATCH', body: JSON.stringify({ id: selectedWs.id, [key]: next }) })
-                              setSelectedWs(w => w ? { ...w, [key]: next } : w)
-                              setWorkshops(ws => ws.map(w => w.id === selectedWs.id ? { ...w, [key]: next } : w))
-                            }} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '10px 8px', borderRadius: 10, border: `1.5px solid ${on ? activeColor + '40' : '#e2e8f0'}`, background: on ? activeBg : '#f8fafc', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>
-                              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: on ? activeColor : '#94a3b8' }}>{label}</span>
-                              <span style={{ fontSize: '0.7rem', color: on ? activeColor : '#cbd5e1', fontWeight: 600 }}>{on ? '● مفتوح' : '○ مغلق'}</span>
-                            </button>
-                          )
-                        })}
-                      </div>
-
-                      {/* Tabs */}
-                      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', flexShrink: 0, padding: '0 16px' }}>
-                        {([['materials','المواد'], ['enrollments','المسجّلون'], ['evals','التقييمات'], ['strange','المهن 🎭']] as const).map(([k, lbl]) => (
-                          <button key={k} onClick={() => setWsPanel(k)}
-                            style={{ padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.82rem', fontWeight: wsPanel === k ? 700 : 400, color: wsPanel === k ? '#1e5fdc' : '#64748b', borderBottom: `2px solid ${wsPanel === k ? '#1e5fdc' : 'transparent'}`, marginBottom: -1, whiteSpace: 'nowrap' }}>
-                            {lbl}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Panel content */}
-                      <div style={{ padding: '20px 24px', flex: 1 }}>
-
-                        {/* Materials */}
-                        {wsPanel === 'materials' && (
-                          <>
-                            {materials.filter(m => m.workshop_id === selectedWs.id).map(m => (
-                              <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.85rem' }}>
-                                <div>
-                                  <div style={{ color: '#1e293b', fontWeight: 500 }}>{m.name}</div>
-                                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 2 }}>{m.content_type}</div>
-                                </div>
-                                <button style={styles.btnDanger} onClick={() => setConfirmDel({ type: 'material', id: m.id, label: m.name })}>×</button>
-                              </div>
-                            ))}
-                            {materials.filter(m => m.workshop_id === selectedWs.id).length === 0 && (
-                              <p style={{ color: '#94a3b8', textAlign: 'center', padding: '24px 0', fontSize: '0.85rem' }}>لا توجد مواد بعد</p>
-                            )}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 16 }}>
-                              <input placeholder="اسم المادة" value={matForm.name} onChange={e => setMatForm(f => ({ ...f, name: e.target.value }))} style={{ ...styles.input, gridColumn: 'span 2' }} />
-                              <input placeholder="رابط URL" value={matForm.url} onChange={e => setMatForm(f => ({ ...f, url: e.target.value }))} style={styles.input} />
-                              <select value={matForm.content_type} onChange={e => setMatForm(f => ({ ...f, content_type: e.target.value }))} style={styles.input}>
-                                {['file', 'video', 'link', 'quiz'].map(t => <option key={t} value={t}>{t}</option>)}
-                              </select>
-                              <button style={{ ...styles.btnPrimary, gridColumn: 'span 2' }} disabled={matFormSaving || !matForm.name || !matForm.url} onClick={async () => {
-                                setMatFormSaving(true)
-                                const res = await adminFetch('/api/admin/materials', { method: 'POST', body: JSON.stringify({ ...matForm, workshop_id: selectedWs.id }) })
-                                if (res.ok) { const d = await res.json(); setMaterials(m => [...m, { ...matForm, id: d.id, workshop_id: selectedWs.id, sort_order: 0 }]); setMatForm({ name: '', url: '', content_type: 'file' }) }
-                                setMatFormSaving(false)
-                              }}>{matFormSaving ? '...' : '+ إضافة مادة'}</button>
-                            </div>
-                          </>
-                        )}
-
-                        {/* Enrollments */}
-                        {wsPanel === 'enrollments' && (
-                          <>
-                            <div style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: 14 }}>
-                              {enrollments.filter(e => e.workshop_id === selectedWs.id).length} مسجّل
-                            </div>
-                            {enrollments.filter(e => e.workshop_id === selectedWs.id).map(e => {
-                              const u = users.find(u => u.id === e.user_id)
-                              const userName = u?.user_metadata?.name ?? u?.user_metadata?.full_name ?? ''
-                              return (
-                                <div key={e.id} style={{ padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#e0e7ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 700, color: '#4f46e5', flexShrink: 0 }}>
-                                      {(userName || e.user_email || '?')[0].toUpperCase()}
-                                    </div>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                      {userName && <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{userName}</div>}
-                                      <div style={{ fontSize: '0.75rem', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.user_email ?? '—'}</div>
-                                    </div>
-                                    <button style={{ ...styles.btnDanger, padding: '4px 8px' }} onClick={() => setConfirmDel({ type: 'enrollment', id: e.id, label: e.user_email ?? '' })}>×</button>
-                                  </div>
-                                  <div style={{ display: 'flex', gap: 6 }}>
-                                    <input
-                                      placeholder="رابط الشهادة (Drive…)"
-                                      value={certUrls[e.id] ?? ''}
-                                      onChange={ev => setCertUrls(prev => ({ ...prev, [e.id]: ev.target.value }))}
-                                      style={{ ...styles.input, flex: 1, fontSize: '0.78rem', padding: '6px 10px' }}
-                                    />
-                                    <button style={{ ...styles.btnSecondary, fontSize: '0.78rem', padding: '6px 12px', whiteSpace: 'nowrap' }}
-                                      onClick={async () => {
-                                        const url = certUrls[e.id]?.trim() ?? ''
-                                        const res = await adminFetch('/api/admin/enrollments', { method: 'PATCH', body: JSON.stringify({ id: e.id, cert_url: url || null }) })
-                                        if (res.ok) setEnrollments(prev => prev.map(x => x.id === e.id ? { ...x, cert_url: url || null } : x))
-                                      }}>حفظ</button>
-                                    {certUrls[e.id] && (
-                                      <a href={certUrls[e.id]} target="_blank" rel="noopener noreferrer"
-                                        style={{ ...styles.btnPrimary, fontSize: '0.78rem', padding: '6px 10px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                                        🎓
-                                      </a>
-                                    )}
-                                  </div>
-                                </div>
-                              )
-                            })}
-                            {enrollments.filter(e => e.workshop_id === selectedWs.id).length === 0 && (
-                              <p style={{ color: '#94a3b8', textAlign: 'center', padding: '24px 0', fontSize: '0.85rem' }}>لا يوجد مسجّلون بعد</p>
-                            )}
-                            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-                              <input placeholder="بريد المستخدم" value={enrEmail} onChange={e => setEnrEmail(e.target.value)} style={{ ...styles.input, flex: 1 }} />
-                              <button style={styles.btnPrimary} disabled={enrSaving || !enrEmail} onClick={async () => {
-                                setEnrSaving(true)
-                                const res = await adminFetch('/api/admin/enrollments', { method: 'POST', body: JSON.stringify({ workshop_id: selectedWs.id, user_email: enrEmail }) })
-                                if (res.ok) { fetchAll(); setEnrEmail('') }
-                                setEnrSaving(false)
-                              }}>{enrSaving ? '...' : '+ تسجيل'}</button>
-                            </div>
-                          </>
-                        )}
-
-                        {/* Strange Professions */}
-                        {wsPanel === 'strange' && (
-                          <>
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                              <a href="/strange/results" target="_blank" rel="noopener noreferrer"
-                                style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e5fdc', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '5px 12px', textDecoration: 'none' }}>
-                                🏆 عرض النتائج
-                              </a>
-                            </div>
-                            {[...strangeProfessions].filter(p => p.workshop_id === selectedWs.id)
-                              .sort((a, b) => {
-                                const avgA = a.strange_profession_votes.length ? a.strange_profession_votes.reduce((s, v) => s + v.avg_score, 0) / a.strange_profession_votes.length : 0
-                                const avgB = b.strange_profession_votes.length ? b.strange_profession_votes.reduce((s, v) => s + v.avg_score, 0) / b.strange_profession_votes.length : 0
-                                return avgB - avgA
-                              })
-                              .map((p, idx) => {
-                                const votes = p.strange_profession_votes
-                                const avgScore = votes.length ? (votes.reduce((s, v) => s + v.avg_score, 0) / votes.length).toFixed(2) : '—'
-                                const isWinner = idx === 0 && votes.length > 0
-                                const link = typeof window !== 'undefined' ? `${window.location.origin}/strange/${p.code}` : `/strange/${p.code}`
-                                return (
-                                  <div key={p.id} style={{ padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                                      <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                          {isWinner && <span>🏆</span>}{p.name}
-                                        </div>
-                                        <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 2 }}>
-                                          كود: <strong style={{ color: '#1e5fdc' }}>{p.code}</strong> · {votes.length} صوت · متوسط: {avgScore}
-                                        </div>
-                                      </div>
-                                      <div style={{ display: 'flex', gap: 4 }}>
-                                        <button style={{ ...styles.btnSecondary, fontSize: '0.72rem', padding: '4px 8px' }} onClick={() => navigator.clipboard.writeText(link)}>نسخ</button>
-                                        <button style={styles.btnDanger} onClick={() => { setStrangeProfessions(ps => ps.filter(x => x.id !== p.id)); adminFetch('/api/admin/strange', { method: 'DELETE', body: JSON.stringify({ id: p.id }) }) }}>×</button>
-                                      </div>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginTop: 8 }}>
-                                      <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`} alt="QR" style={{ width: 72, height: 72, borderRadius: 8 }} />
-                                      <a href={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(link)}`} download={`qr-${p.code}.png`} target="_blank" rel="noopener noreferrer"
-                                        style={{ ...styles.btnSecondary, fontSize: '0.72rem', padding: '4px 8px', textDecoration: 'none', display: 'inline-block' }}>⬇ تحميل</a>
-                                    </div>
-                                    {votes.length > 0 && (
-                                      <div style={{ marginTop: 8 }}>
-                                        <button onClick={() => setExpandedVotes(expandedVotes === p.id ? null : p.id)}
-                                          style={{ fontSize: '0.72rem', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
-                                          {expandedVotes === p.id ? '▲ إخفاء الأصوات' : `▼ عرض الأصوات (${votes.length})`}
-                                        </button>
-                                        {expandedVotes === p.id && (
-                                          <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                            {votes.map((v, vi) => (
-                                              <div key={v.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', borderRadius: 8, padding: '6px 10px', fontSize: '0.72rem' }}>
-                                                <span style={{ color: '#64748b' }}>
-                                                  #{vi + 1} <strong style={{ color: '#1e5fdc' }}>{v.avg_score.toFixed(1)}/5</strong>
-                                                  <span style={{ color: '#94a3b8', marginRight: 8 }}>{new Date(v.created_at).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                                                </span>
-                                                <button onClick={async () => {
-                                                  await adminFetch('/api/admin/strange', { method: 'DELETE', body: JSON.stringify({ vote_id: v.id }) })
-                                                  setStrangeProfessions(ps => ps.map(x => x.id === p.id ? { ...x, strange_profession_votes: x.strange_profession_votes.filter(vt => vt.id !== v.id) } : x))
-                                                }} style={{ ...styles.btnDanger, fontSize: '0.65rem', padding: '2px 6px' }}>حذف</button>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                )
-                              })}
-                            {strangeProfessions.filter(p => p.workshop_id === selectedWs.id).length === 0 && (
-                              <p style={{ color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center', padding: '24px 0' }}>لا توجد مهن بعد</p>
-                            )}
-                            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                              <input placeholder="اسم المهنة الغريبة" value={strangeName} onChange={e => setStrangeName(e.target.value)} style={{ ...styles.input, flex: 1 }} />
-                              <button style={styles.btnPrimary} disabled={strangeSaving || !strangeName} onClick={async () => {
-                                setStrangeSaving(true)
-                                const res = await adminFetch('/api/admin/strange', { method: 'POST', body: JSON.stringify({ workshop_id: selectedWs.id, name: strangeName }) })
-                                if (res.ok) {
-                                  const d = await res.json()
-                                  setStrangeProfessions(ps => [...ps, { id: d.id, workshop_id: selectedWs.id, name: strangeName, code: d.code, is_active: true, strange_profession_votes: [] }])
-                                  setStrangeName('')
-                                }
-                                setStrangeSaving(false)
-                              }}>{strangeSaving ? '...' : 'إضافة'}</button>
-                            </div>
-                          </>
-                        )}
-
-                        {/* Evaluations */}
-                        {wsPanel === 'evals' && (() => {
-                          const wsEvalsFiltered = wsEvals.filter(e => e.workshop_id === selectedWs.id)
-                          const keys: [keyof WsEval, string][] = [['trainer_rating','المدرّب'], ['interaction_rating','التفاعل'], ['content_rating','المحتوى'], ['facilities_rating','التجهيزات'], ['benefit_rating','الفائدة']]
-                          return wsEvalsFiltered.length === 0 ? (
-                            <p style={{ color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center', padding: '32px 0' }}>لا توجد تقييمات بعد</p>
-                          ) : (
-                            <>
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 16 }}>
-                                {keys.map(([k, lbl]) => (
-                                  <div key={k} style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 4px', textAlign: 'center' }}>
-                                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1e5fdc' }}>{avg(wsEvalsFiltered, k)}</div>
-                                    <div style={{ fontSize: '0.65rem', color: '#64748b', marginTop: 2 }}>{lbl}</div>
-                                  </div>
-                                ))}
-                              </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                {wsEvalsFiltered.map(e => (
-                                  <div key={e.id} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px', fontSize: '0.82rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                                      <span style={{ fontWeight: 600, color: '#1e293b' }}>{e.user_name ?? 'مجهول'}</span>
-                                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                                        <span style={{ color: '#94a3b8', fontSize: '0.72rem' }}>{new Date(e.created_at).toLocaleDateString('ar-SA')}</span>
-                                        <button style={{ ...styles.btnDanger, fontSize: '0.65rem', padding: '2px 6px' }} onClick={() => setConfirmDel({ type: 'wseval', id: e.id, label: e.user_name ?? '' })}>حذف</button>
-                                      </div>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                                      {keys.map(([k, lbl]) => {
-                                        const v = Number(e[k])
-                                        return <span key={k} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 6, padding: '2px 8px', fontSize: '0.75rem' }}>
-                                          {lbl}: <strong style={{ color: v >= 8 ? '#16a34a' : v >= 5 ? '#f59e0b' : '#ef4444' }}>{v}</strong>
-                                        </span>
-                                      })}
-                                    </div>
-                                    {e.comments && <p style={{ color: '#64748b', margin: '8px 0 0', fontStyle: 'italic', fontSize: '0.78rem' }}>{e.comments}</p>}
-                                  </div>
-                                ))}
-                              </div>
-                            </>
-                          )
-                        })()}
-
-                      </div>
-                    </div>
-                  </>
+              {/* end workshop list */}
+              </>
                 )}
               </div>
             )}
@@ -1000,6 +779,295 @@ const styles = {
   btnSecondary:{ background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: '0.84rem' } as React.CSSProperties,
   btnDanger:   { background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 } as React.CSSProperties,
   badge: (color: string) => ({ fontSize: '0.68rem', background: color + '20', color, padding: '2px 8px', borderRadius: 99, fontWeight: 600 }) as React.CSSProperties,
+}
+
+// ── Workshop Detail (drill-down full page) ──
+function WorkshopDetail({
+  ws, materials, enrollments, wsEvals, users, strangeProfessions, expandedVotes,
+  wsPanel, matForm, matFormSaving, enrEmail, enrSaving, strangeName, strangeSaving, certUrls,
+  onBack, onDelete, onToggle, onPanelChange, onMatFormChange, onMatAdd,
+  onEnrEmailChange, onEnrAdd, onCertUrlChange, onCertUrlSave,
+  onStrangeNameChange, onStrangeAdd, onStrangeDelete, onVoteDelete, onExpandVotes,
+}: {
+  ws: Workshop; materials: Material[]; enrollments: Enrollment[]; wsEvals: WsEval[]
+  users: SiteUser[]; strangeProfessions: StrangeProf[]; expandedVotes: string | null
+  wsPanel: 'materials'|'enrollments'|'strange'|'evals'
+  matForm: { name: string; url: string; content_type: string }; matFormSaving: boolean
+  enrEmail: string; enrSaving: boolean; strangeName: string; strangeSaving: boolean
+  certUrls: Record<string, string>
+  onBack: () => void
+  onDelete: (type: string, id: string, label: string) => void
+  onToggle: (key: 'post_assessment_open'|'evaluation_open') => void
+  onPanelChange: (p: 'materials'|'enrollments'|'strange'|'evals') => void
+  onMatFormChange: (v: Partial<{name:string;url:string;content_type:string}>) => void
+  onMatAdd: () => void
+  onEnrEmailChange: (v: string) => void
+  onEnrAdd: () => void
+  onCertUrlChange: (id: string, url: string) => void
+  onCertUrlSave: (id: string) => void
+  onStrangeNameChange: (v: string) => void
+  onStrangeAdd: () => void
+  onStrangeDelete: (id: string) => void
+  onVoteDelete: (profId: string, voteId: string) => void
+  onExpandVotes: (id: string | null) => void
+}) {
+  const wsMats  = materials.filter(m => m.workshop_id === ws.id)
+  const wsEnrs  = enrollments.filter(e => e.workshop_id === ws.id)
+  const wsEvalsFiltered = wsEvals.filter(e => e.workshop_id === ws.id)
+  const wsProfs = [...strangeProfessions].filter(p => p.workshop_id === ws.id).sort((a, b) => {
+    const aAvg = a.strange_profession_votes.length ? a.strange_profession_votes.reduce((s, v) => s + v.avg_score, 0) / a.strange_profession_votes.length : 0
+    const bAvg = b.strange_profession_votes.length ? b.strange_profession_votes.reduce((s, v) => s + v.avg_score, 0) / b.strange_profession_votes.length : 0
+    return bAvg - aAvg
+  })
+  const evalKeys: [keyof WsEval, string][] = [['trainer_rating','المدرّب'],['interaction_rating','التفاعل'],['content_rating','المحتوى'],['facilities_rating','التجهيزات'],['benefit_rating','الفائدة']]
+
+  const TABS: { key: 'materials'|'enrollments'|'evals'|'strange'; label: string; count: number }[] = [
+    { key: 'materials',  label: 'المواد',      count: wsMats.length },
+    { key: 'enrollments',label: 'المسجّلون',   count: wsEnrs.length },
+    { key: 'evals',      label: 'التقييمات',   count: wsEvalsFiltered.length },
+    { key: 'strange',    label: 'المهن 🎭',    count: wsProfs.length },
+  ]
+
+  return (
+    <div dir="rtl">
+      {/* Breadcrumb */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
+        <button onClick={onBack} style={{ ...styles.btnSecondary, display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px' }}>
+          ← الدورات
+        </button>
+        <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>/</span>
+        <span style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a' }}>{ws.name_ar}</span>
+      </div>
+
+      {/* Workshop header card */}
+      <div style={{ background: 'white', borderRadius: 16, padding: '24px 28px', boxShadow: '0 1px 6px rgba(0,0,0,0.07)', marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+          <div>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>{ws.name_ar}</h2>
+            {ws.name_en && <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: 4 }}>{ws.name_en}</div>}
+            {ws.description_ar && <div style={{ fontSize: '0.88rem', color: '#475569', marginTop: 8, maxWidth: 560 }}>{ws.description_ar}</div>}
+            <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: '0.8rem', color: '#64748b', flexWrap: 'wrap' }}>
+              {ws.category  && <span>📂 {ws.category}</span>}
+              {ws.duration   && <span>⏱ {ws.duration}</span>}
+              {ws.discount_percent ? <span>🏷 {ws.discount_percent}% — كود: {ws.discount_code}</span> : null}
+            </div>
+          </div>
+          {/* Toggles */}
+          <div style={{ display: 'flex', gap: 10 }}>
+            {([
+              { label: 'الاختبار البعدي', key: 'post_assessment_open' as const, activeColor: '#16a34a', activeBg: '#dcfce7' },
+              { label: 'تقييم الورشة',   key: 'evaluation_open'     as const, activeColor: '#b45309', activeBg: '#fef9c3' },
+            ]).map(({ label, key, activeColor, activeBg }) => {
+              const on = ws[key]
+              return (
+                <button key={key} onClick={() => onToggle(key)}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '10px 18px', borderRadius: 12, border: `1.5px solid ${on ? activeColor + '50' : '#e2e8f0'}`, background: on ? activeBg : '#f8fafc', cursor: 'pointer', fontFamily: 'inherit' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: on ? activeColor : '#94a3b8' }}>{label}</span>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: on ? activeColor : '#cbd5e1' }}>{on ? '● مفتوح' : '○ مغلق'}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 0, marginBottom: 0, borderBottom: '2px solid #e2e8f0' }}>
+        {TABS.map(({ key, label, count }) => (
+          <button key={key} onClick={() => onPanelChange(key)}
+            style={{ padding: '12px 22px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', fontWeight: wsPanel === key ? 700 : 400, color: wsPanel === key ? '#1e5fdc' : '#64748b', borderBottom: `3px solid ${wsPanel === key ? '#1e5fdc' : 'transparent'}`, marginBottom: -2, display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
+            {label}
+            <span style={{ fontSize: '0.72rem', background: wsPanel === key ? '#dbeafe' : '#f1f5f9', color: wsPanel === key ? '#1e5fdc' : '#94a3b8', borderRadius: 99, padding: '1px 7px', fontWeight: 700 }}>{count}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      <div style={{ background: 'white', borderRadius: '0 0 16px 16px', padding: '28px', boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
+
+        {/* Materials */}
+        {wsPanel === 'materials' && (
+          <div>
+            {wsMats.length === 0 && <p style={{ color: '#94a3b8', textAlign: 'center', padding: '32px 0' }}>لا توجد مواد بعد</p>}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+              {wsMats.map(m => (
+                <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: '#f8fafc', borderRadius: 10 }}>
+                  <span style={{ fontSize: '1.1rem' }}>{m.content_type === 'video' ? '🎬' : m.content_type === 'link' ? '🔗' : m.content_type === 'quiz' ? '📝' : '📄'}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.88rem', color: '#1e293b' }}>{m.name}</div>
+                    <a href={m.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', color: '#94a3b8', textDecoration: 'none' }}>{m.url}</a>
+                  </div>
+                  <button style={styles.btnDanger} onClick={() => onDelete('material', m.id, m.name)}>×</button>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: '#f8fafc', borderRadius: 12, padding: '20px' }}>
+              <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#475569', marginBottom: 12 }}>+ إضافة مادة</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 10 }}>
+                <input placeholder="اسم المادة" value={matForm.name} onChange={e => onMatFormChange({ name: e.target.value })} style={{ ...styles.input, gridColumn: 'span 3' }} />
+                <input placeholder="رابط URL" value={matForm.url} onChange={e => onMatFormChange({ url: e.target.value })} style={styles.input} />
+                <select value={matForm.content_type} onChange={e => onMatFormChange({ content_type: e.target.value })} style={styles.input}>
+                  {['file','video','link','quiz'].map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <button style={styles.btnPrimary} disabled={matFormSaving || !matForm.name || !matForm.url} onClick={onMatAdd}>{matFormSaving ? '...' : 'إضافة'}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Enrollments */}
+        {wsPanel === 'enrollments' && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12, marginBottom: 24 }}>
+              {wsEnrs.length === 0 && <p style={{ color: '#94a3b8', gridColumn: '1 / -1', textAlign: 'center', padding: '32px 0' }}>لا يوجد مسجّلون بعد</p>}
+              {wsEnrs.map(e => {
+                const u = users.find(u => u.id === e.user_id)
+                const userName = u?.user_metadata?.name ?? u?.user_metadata?.full_name ?? ''
+                const initial = (userName || e.user_email || '?')[0].toUpperCase()
+                return (
+                  <div key={e.id} style={{ background: '#f8fafc', borderRadius: 12, padding: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                      <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#e0e7ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 700, color: '#4f46e5', flexShrink: 0 }}>
+                        {initial}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        {userName && <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>{userName}</div>}
+                        <div style={{ fontSize: '0.78rem', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.user_email ?? '—'}</div>
+                      </div>
+                      <button style={{ ...styles.btnDanger, padding: '4px 10px' }} onClick={() => onDelete('enrollment', e.id, e.user_email ?? '')}>×</button>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <input placeholder="رابط الشهادة..." value={certUrls[e.id] ?? ''} onChange={ev => onCertUrlChange(e.id, ev.target.value)}
+                        style={{ ...styles.input, flex: 1, fontSize: '0.8rem', padding: '6px 10px' }} />
+                      <button style={{ ...styles.btnSecondary, fontSize: '0.8rem', padding: '6px 12px' }} onClick={() => onCertUrlSave(e.id)}>حفظ</button>
+                      {certUrls[e.id] && (
+                        <a href={certUrls[e.id]} target="_blank" rel="noopener noreferrer" style={{ ...styles.btnPrimary, fontSize: '0.8rem', padding: '6px 12px', textDecoration: 'none' }}>🎓</a>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div style={{ background: '#f8fafc', borderRadius: 12, padding: '16px', display: 'flex', gap: 10 }}>
+              <input placeholder="بريد المستخدم" value={enrEmail} onChange={e => onEnrEmailChange(e.target.value)} style={{ ...styles.input, flex: 1 }} />
+              <button style={styles.btnPrimary} disabled={enrSaving || !enrEmail} onClick={onEnrAdd}>{enrSaving ? '...' : '+ تسجيل'}</button>
+            </div>
+          </div>
+        )}
+
+        {/* Evaluations */}
+        {wsPanel === 'evals' && (
+          wsEvalsFiltered.length === 0 ? (
+            <p style={{ color: '#94a3b8', textAlign: 'center', padding: '48px 0' }}>لا توجد تقييمات بعد</p>
+          ) : (
+            <div>
+              {/* Averages */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 24 }}>
+                {evalKeys.map(([k, lbl]) => {
+                  const v = Number(avg(wsEvalsFiltered, k))
+                  return (
+                    <div key={k} style={{ background: '#f8fafc', borderRadius: 12, padding: '16px 8px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '2rem', fontWeight: 800, color: v >= 8 ? '#16a34a' : v >= 5 ? '#f59e0b' : '#ef4444' }}>{v}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 4 }}>{lbl}</div>
+                    </div>
+                  )
+                })}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {wsEvalsFiltered.map(e => (
+                  <div key={e.id} style={{ background: '#f8fafc', borderRadius: 12, padding: '14px 18px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>{e.user_name ?? 'مجهول'}</span>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{new Date(e.created_at).toLocaleDateString('ar-SA')}</span>
+                        <button style={{ ...styles.btnDanger, fontSize: '0.72rem', padding: '3px 8px' }} onClick={() => onDelete('wseval', e.id, e.user_name ?? '')}>حذف</button>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {evalKeys.map(([k, lbl]) => {
+                        const v = Number(e[k])
+                        return <span key={k} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, padding: '4px 12px', fontSize: '0.82rem' }}>
+                          {lbl} <strong style={{ color: v >= 8 ? '#16a34a' : v >= 5 ? '#f59e0b' : '#ef4444' }}>{v}</strong>
+                        </span>
+                      })}
+                    </div>
+                    {e.comments && <p style={{ color: '#64748b', marginTop: 10, fontSize: '0.85rem', fontStyle: 'italic' }}>{e.comments}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        )}
+
+        {/* Strange professions */}
+        {wsPanel === 'strange' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+              <a href="/strange/results" target="_blank" rel="noopener noreferrer"
+                style={{ ...styles.btnSecondary, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                🏆 عرض النتائج العامة
+              </a>
+            </div>
+            {wsProfs.length === 0 && <p style={{ color: '#94a3b8', textAlign: 'center', padding: '32px 0' }}>لا توجد مهن بعد</p>}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12, marginBottom: 24 }}>
+              {wsProfs.map((p, idx) => {
+                const votes = p.strange_profession_votes
+                const avgScore = votes.length ? (votes.reduce((s, v) => s + v.avg_score, 0) / votes.length).toFixed(1) : '—'
+                const isWinner = idx === 0 && votes.length > 0
+                const link = typeof window !== 'undefined' ? `${window.location.origin}/strange/${p.code}` : `/strange/${p.code}`
+                return (
+                  <div key={p.id} style={{ background: '#f8fafc', borderRadius: 12, padding: '16px', border: isWinner ? '2px solid #f59e0b' : '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {isWinner && '🏆'} {p.name}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 2 }}>
+                          كود: <strong style={{ color: '#1e5fdc' }}>{p.code}</strong> · {votes.length} صوت · {avgScore}/5
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button style={{ ...styles.btnSecondary, fontSize: '0.72rem', padding: '4px 8px' }} onClick={() => navigator.clipboard.writeText(link)}>نسخ</button>
+                        <button style={styles.btnDanger} onClick={() => onStrangeDelete(p.id)}>×</button>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                      <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`} alt="QR" style={{ width: 64, height: 64, borderRadius: 8 }} />
+                      <a href={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(link)}`} download={`qr-${p.code}.png`} target="_blank" rel="noopener noreferrer"
+                        style={{ ...styles.btnSecondary, fontSize: '0.72rem', padding: '4px 8px', textDecoration: 'none', display: 'inline-block' }}>⬇ QR</a>
+                    </div>
+                    {votes.length > 0 && (
+                      <div style={{ marginTop: 10 }}>
+                        <button onClick={() => onExpandVotes(expandedVotes === p.id ? null : p.id)}
+                          style={{ fontSize: '0.75rem', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+                          {expandedVotes === p.id ? '▲ إخفاء' : `▼ الأصوات (${votes.length})`}
+                        </button>
+                        {expandedVotes === p.id && (
+                          <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {votes.map((v, vi) => (
+                              <div key={v.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', borderRadius: 8, padding: '6px 10px', fontSize: '0.75rem' }}>
+                                <span>#{vi+1} <strong style={{ color: '#1e5fdc' }}>{v.avg_score.toFixed(1)}/5</strong> <span style={{ color: '#94a3b8' }}>{new Date(v.created_at).toLocaleDateString('ar-SA', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}</span></span>
+                                <button style={{ ...styles.btnDanger, fontSize: '0.65rem', padding: '2px 6px' }} onClick={() => onVoteDelete(p.id, v.id)}>حذف</button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            <div style={{ background: '#f8fafc', borderRadius: 12, padding: '16px', display: 'flex', gap: 10 }}>
+              <input placeholder="اسم المهنة الغريبة" value={strangeName} onChange={e => onStrangeNameChange(e.target.value)} style={{ ...styles.input, flex: 1 }} />
+              <button style={styles.btnPrimary} disabled={strangeSaving || !strangeName} onClick={onStrangeAdd}>{strangeSaving ? '...' : '+ إضافة'}</button>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  )
 }
 
 function exportRegistrationsCSV(regs: WsRegistration[]) {
