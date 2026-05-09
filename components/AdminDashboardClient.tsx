@@ -12,7 +12,7 @@ type Survey     = { id: string; name: string | null; email: string | null; surve
 type SiteUser   = { id: string; email: string; created_at: string; user_metadata: { name?: string; full_name?: string; phone?: string } }
 type Workshop   = { id: string; name_ar: string; name_en: string | null; description_ar: string | null; category: string | null; duration: string | null; discount_percent: number | null; discount_code: string | null; is_active: boolean; post_assessment_open: boolean; evaluation_open: boolean }
 type Material   = { id: string; workshop_id: string; name: string; url: string; content_type: string; sort_order: number }
-type Enrollment = { id: string; workshop_id: string; user_id: string | null; user_email: string | null; created_at: string }
+type Enrollment = { id: string; workshop_id: string; user_id: string | null; user_email: string | null; created_at: string; cert_url?: string | null }
 type WsRegistration = { id: string; workshop_id: string | null; workshop_title: string; name: string; phone: string; email: string | null; created_at: string }
 type Consult    = { id: string; user_email: string | null; user_name: string | null; subject: string; message: string; reply: string | null; status: string; created_at: string }
 type EvalSettings = { is_open: boolean }
@@ -86,7 +86,7 @@ export function AdminDashboardClient() {
   const [strangeProfessions, setStrangeProfessions] = useState<StrangeProf[]>([])
   const [strangeName, setStrangeName] = useState('')
   const [strangeSaving, setStrangeSaving] = useState(false)
-  const [wsPanel, setWsPanel] = useState<'materials' | 'enrollments' | 'strange' | 'evals' | 'cert'>('materials')
+  const [wsPanel, setWsPanel] = useState<'materials' | 'enrollments' | 'strange' | 'evals'>('materials')
   const [expandedVotes, setExpandedVotes] = useState<string | null>(null)
 
   // add-user form
@@ -94,11 +94,6 @@ export function AdminDashboardClient() {
   const [userFormOpen, setUserFormOpen] = useState(false)
   const [userFormSaving, setUserFormSaving] = useState(false)
 
-  const [certModal, setCertModal] = useState<{ name: string; workshop: string; date: string } | null>(null)
-
-  // certificate template
-  const [certTemplateUrl, setCertTemplateUrl] = useState<string | null>(null)
-  const [certUploading, setCertUploading] = useState(false)
 
   const changeTab = (t: AdminTab) => { setTab(t); localStorage.setItem('admin_tab', t) }
 
@@ -134,12 +129,6 @@ export function AdminDashboardClient() {
       }
       setReady(true)
       fetchAll()
-      const { data: urlData } = supabase.storage.from('certificates').getPublicUrl('template')
-      if (urlData?.publicUrl) {
-        fetch(urlData.publicUrl, { method: 'HEAD' }).then(r => {
-          if (r.ok) setCertTemplateUrl(urlData.publicUrl)
-        })
-      }
     })
   }, [router, fetchAll])
 
@@ -528,7 +517,7 @@ export function AdminDashboardClient() {
 
                       {/* Panel tabs */}
                       <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid #e2e8f0', paddingBottom: 0 }}>
-                        {([['materials','المواد'], ['enrollments','المسجّلون'], ['evals','التقييمات'], ['strange','المهن 🎭'], ['cert','الشهادة 🏅']] as const).map(([k, lbl]) => (
+                        {([['materials','المواد'], ['enrollments','المسجّلون'], ['evals','التقييمات'], ['strange','المهن 🎭']] as const).map(([k, lbl]) => (
                           <button key={k} onClick={() => setWsPanel(k)}
                             style={{ padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.78rem', fontWeight: wsPanel === k ? 700 : 400, color: wsPanel === k ? '#1e5fdc' : '#64748b', borderBottom: `2px solid ${wsPanel === k ? '#1e5fdc' : 'transparent'}`, marginBottom: -1 }}>
                             {lbl}
@@ -565,18 +554,46 @@ export function AdminDashboardClient() {
                       {/* Enrollments panel */}
                       {wsPanel === 'enrollments' && (
                         <>
-                          <div style={styles.cardTitle}>المسجّلون</div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                            <div style={styles.cardTitle}>المسجّلون ({enrollments.filter(e => e.workshop_id === selectedWs.id).length})</div>
+                          </div>
                           {enrollments.filter(e => e.workshop_id === selectedWs.id).map(e => {
                             const u = users.find(u => u.id === e.user_id)
-                            const userName = u?.user_metadata?.name ?? u?.user_metadata?.full_name ?? e.user_email ?? ''
+                            const userName = u?.user_metadata?.name ?? u?.user_metadata?.full_name ?? ''
                             return (
-                              <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.82rem', gap: 6 }}>
-                                <span style={{ color: '#334155', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.user_email ?? '—'}</span>
-                                <button style={{ ...styles.btnPrimary, fontSize: '0.72rem', padding: '3px 8px' }}
-                                  onClick={() => setCertModal({ name: userName, workshop: selectedWs.name_ar, date: new Date().toLocaleDateString('ar-SA') })}>
-                                  🎓
-                                </button>
-                                <button style={styles.btnDanger} onClick={() => setConfirmDel({ type: 'enrollment', id: e.id, label: e.user_email ?? '' })}>×</button>
+                              <div key={e.id} style={{ padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
+                                {/* Name + Email row */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    {userName && <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#1e293b' }}>{userName}</div>}
+                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.user_email ?? '—'}</div>
+                                  </div>
+                                  <button style={styles.btnDanger} onClick={() => setConfirmDel({ type: 'enrollment', id: e.id, label: e.user_email ?? '' })}>×</button>
+                                </div>
+                                {/* Certificate URL row */}
+                                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                  <input
+                                    placeholder="رابط الشهادة (Drive أو غيره)"
+                                    defaultValue={e.cert_url ?? ''}
+                                    id={`cert-url-${e.id}`}
+                                    style={{ ...styles.input, flex: 1, fontSize: '0.72rem', padding: '5px 8px' }}
+                                  />
+                                  <button style={{ ...styles.btnSecondary, fontSize: '0.72rem', padding: '5px 10px', whiteSpace: 'nowrap' }}
+                                    onClick={async () => {
+                                      const input = document.getElementById(`cert-url-${e.id}`) as HTMLInputElement
+                                      const url = input?.value?.trim() ?? ''
+                                      const res = await adminFetch('/api/admin/enrollments', { method: 'PATCH', body: JSON.stringify({ id: e.id, cert_url: url || null }) })
+                                      if (res.ok) setEnrollments(prev => prev.map(x => x.id === e.id ? { ...x, cert_url: url || null } : x))
+                                    }}>
+                                    حفظ
+                                  </button>
+                                  {e.cert_url && (
+                                    <a href={e.cert_url} target="_blank" rel="noopener noreferrer"
+                                      style={{ ...styles.btnPrimary, fontSize: '0.72rem', padding: '5px 10px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                                      🎓 فتح
+                                    </a>
+                                  )}
+                                </div>
                               </div>
                             )
                           })}
@@ -702,68 +719,6 @@ export function AdminDashboardClient() {
                               setStrangeSaving(false)
                             }}>{strangeSaving ? '...' : 'إضافة'}</button>
                           </div>
-                        </>
-                      )}
-
-                      {/* Certificate template panel */}
-                      {wsPanel === 'cert' && (
-                        <>
-                          <div style={styles.cardTitle}>قالب الشهادة</div>
-                          <p style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: 12, lineHeight: 1.7 }}>
-                            ارفع صورة قالب الشهادة (PNG أو JPG). ستُستخدم كخلفية لجميع الشهادات المولّدة.
-                            <br />
-                            <span style={{ color: '#f59e0b', fontWeight: 600 }}>
-                              تأكد من إنشاء bucket باسم &quot;certificates&quot; في Supabase Storage (Public).
-                            </span>
-                          </p>
-
-                          {certTemplateUrl && (
-                            <div style={{ marginBottom: 14 }}>
-                              <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: 6 }}>القالب الحالي:</div>
-                              <img
-                                src={certTemplateUrl}
-                                alt="certificate template"
-                                style={{ width: '100%', borderRadius: 8, border: '1px solid #e2e8f0', objectFit: 'contain', maxHeight: 200 }}
-                                onError={() => setCertTemplateUrl(null)}
-                              />
-                              <a
-                                href={`/certificate?name=اسم+تجريبي&workshop=${encodeURIComponent(selectedWs.name_ar)}&date=${new Date().toLocaleDateString('ar-SA')}`}
-                                target="_blank" rel="noopener noreferrer"
-                                style={{ ...styles.btnSecondary, display: 'inline-block', marginTop: 8, fontSize: '0.78rem', textDecoration: 'none' }}>
-                                👁 معاينة الشهادة
-                              </a>
-                            </div>
-                          )}
-
-                          <label style={{ display: 'block' }}>
-                            <div style={{ ...styles.btnPrimary, display: 'inline-block', cursor: 'pointer', fontSize: '0.82rem', opacity: certUploading ? 0.6 : 1 }}>
-                              {certUploading ? 'جارِ الرفع...' : '📁 اختر ملف القالب'}
-                            </div>
-                            <input type="file" accept="image/*" style={{ display: 'none' }} disabled={certUploading}
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0]
-                                if (!file) return
-                                setCertUploading(true)
-                                try {
-                                  const { error } = await supabase.storage.from('certificates').upload('template', file, { upsert: true, contentType: file.type })
-                                  if (error) { alert('خطأ في الرفع: ' + error.message); return }
-                                  const { data: urlData } = supabase.storage.from('certificates').getPublicUrl('template')
-                                  setCertTemplateUrl(`${urlData.publicUrl}?t=${Date.now()}`)
-                                } finally {
-                                  setCertUploading(false)
-                                  e.target.value = ''
-                                }
-                              }}
-                            />
-                          </label>
-
-                          {certTemplateUrl && (
-                            <button style={{ ...styles.btnDanger, marginTop: 10, fontSize: '0.78rem' }} onClick={async () => {
-                              if (!confirm('حذف قالب الشهادة؟')) return
-                              await supabase.storage.from('certificates').remove(['template'])
-                              setCertTemplateUrl(null)
-                            }}>🗑 حذف القالب</button>
-                          )}
                         </>
                       )}
 
@@ -997,42 +952,6 @@ export function AdminDashboardClient() {
           </>
         )}
       </main>
-
-      {/* Certificate Modal */}
-      {certModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'white', borderRadius: 16, padding: '28px 28px 24px', maxWidth: 400, width: '90%' }} dir="rtl">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '1rem' }}>🎓 إصدار شهادة</div>
-              <button onClick={() => setCertModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '1.2rem' }}>×</button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div>
-                <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 4 }}>اسم المشارك</label>
-                <input value={certModal.name} onChange={e => setCertModal(c => c ? { ...c, name: e.target.value } : c)}
-                  style={{ ...styles.input, width: '100%', boxSizing: 'border-box' }} placeholder="الاسم الكامل" />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 4 }}>الورشة</label>
-                <input value={certModal.workshop} onChange={e => setCertModal(c => c ? { ...c, workshop: e.target.value } : c)}
-                  style={{ ...styles.input, width: '100%', boxSizing: 'border-box' }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 4 }}>التاريخ</label>
-                <input value={certModal.date} onChange={e => setCertModal(c => c ? { ...c, date: e.target.value } : c)}
-                  style={{ ...styles.input, width: '100%', boxSizing: 'border-box' }} />
-              </div>
-              <button style={{ ...styles.btnPrimary, width: '100%', padding: '11px', marginTop: 4 }}
-                onClick={() => {
-                  const url = `/certificate?name=${encodeURIComponent(certModal.name)}&workshop=${encodeURIComponent(certModal.workshop)}&date=${encodeURIComponent(certModal.date)}`
-                  window.open(url, '_blank')
-                }}>
-                فتح الشهادة للطباعة ↗
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Confirm Delete Modal */}
       {confirmDel && (

@@ -8,6 +8,13 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true })
 }
 
+export async function PATCH(req: NextRequest) {
+  const { id, cert_url } = await req.json()
+  const { error } = await supabaseAdmin.from('workshop_enrollments').update({ cert_url }).eq('id', id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
+}
+
 export async function DELETE(req: NextRequest) {
   const { id } = await req.json()
   const { error } = await supabaseAdmin.from('workshop_enrollments').delete().eq('id', id)
