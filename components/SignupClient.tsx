@@ -44,11 +44,15 @@ export function SignupClient() {
     if (!data.user) { setError('حدث خطأ غير متوقع'); setLoading(false); return }
 
     // Submit for admin approval (bans the user until approved)
-    await fetch('/api/auth/pending-approval', {
+    const res = await fetch('/api/auth/pending-approval', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: data.user.id, name, email }),
     })
+    const result = await res.json()
+
+    // Admin emails skip approval — go straight to admin
+    if (result.skip) { window.location.href = '/admin'; return }
 
     setSentEmail(email)
     setSent(true)

@@ -268,7 +268,7 @@ export function AdminDashboardClient() {
                               disabled={approvingId === a.id}
                               onClick={async () => {
                                 setApprovingId(a.id)
-                                await adminFetch('/api/admin/approvals', { method: 'PATCH', body: JSON.stringify({ id: a.id, userId: a.user_id, action: 'approve' }) })
+                                await adminFetch('/api/admin/approvals', { method: 'PATCH', body: JSON.stringify({ id: a.id, userId: a.user_id, action: 'approve', userEmail: a.user_email, userName: a.user_name }) })
                                 setApprovals(prev => prev.map(x => x.id === a.id ? { ...x, status: 'approved' } : x))
                                 setApprovingId(null)
                               }}>
