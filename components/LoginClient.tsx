@@ -26,7 +26,11 @@ export function LoginClient() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error || !data.user) {
-      setError('البريد الإلكتروني أو كلمة المرور غير صحيحة')
+      const msg = error?.message ?? ''
+      if (msg.toLowerCase().includes('ban') || msg.toLowerCase().includes('user_banned'))
+        setError('حسابك قيد المراجعة، سيتم إشعارك بعد موافقة الإدارة')
+      else
+        setError('البريد الإلكتروني أو كلمة المرور غير صحيحة')
       setLoading(false)
       return
     }

@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase/client'
 
 const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase())
 
-type AdminTab = 'overview' | 'surveys' | 'users' | 'workshops' | 'registrations' | 'consultations' | 'evaluation'
+type AdminTab = 'overview' | 'surveys' | 'users' | 'workshops' | 'registrations' | 'consultations' | 'evaluation' | 'approvals'
 
 type Survey     = { id: string; name: string | null; email: string | null; survey_type: string; total_score: number | null; modal_scores: Record<string,unknown> | null; language: string; created_at: string }
 type SiteUser   = { id: string; email: string; created_at: string; user_metadata: { name?: string; full_name?: string; phone?: string } }
@@ -22,6 +22,7 @@ type StrangeProf = { id: string; workshop_id: string; name: string; code: string
 
 const NAV: { key: AdminTab; label: string; icon: string }[] = [
   { key: 'overview',      label: 'نظرة عامة',     icon: '📊' },
+  { key: 'approvals',     label: 'الموافقات',      icon: '🔐' },
   { key: 'surveys',       label: 'الاختبارات',     icon: '📋' },
   { key: 'users',         label: 'المستخدمون',     icon: '👥' },
   { key: 'workshops',     label: 'الدورات',         icon: '🎓' },
@@ -96,6 +97,10 @@ export function AdminDashboardClient() {
   const [wsPanel, setWsPanel] = useState<'materials' | 'enrollments' | 'strange' | 'evals'>('materials')
   const [expandedVotes, setExpandedVotes] = useState<string | null>(null)
 
+  // pending approvals
+  const [approvals, setApprovals] = useState<{ id: string; user_id: string; user_name: string | null; user_email: string; status: string; created_at: string }[]>([])
+  const [approvingId, setApprovingId] = useState<string | null>(null)
+
   // add-user form
   const [userForm, setUserForm] = useState({ name: '', email: '', password: '' })
   const [userFormOpen, setUserFormOpen] = useState(false)
@@ -107,12 +112,14 @@ export function AdminDashboardClient() {
   const fetchAll = useCallback(async () => {
     setLoading(true)
     try {
-      const [dataRes, usersRes] = await Promise.all([
+      const [dataRes, usersRes, approvalsRes] = await Promise.all([
         adminFetch('/api/admin/data'),
         adminFetch('/api/admin/users'),
+        adminFetch('/api/admin/approvals'),
       ])
       const data = await dataRes.json()
       const usersData = await usersRes.json()
+      const approvalsData = await approvalsRes.json()
       setSurveys(data.surveys ?? [])
       setWorkshops(data.workshops ?? [])
       setMaterials(data.materials ?? [])
@@ -122,6 +129,7 @@ export function AdminDashboardClient() {
       setEvalSettings(data.evalSettings ?? { is_open: false })
       setWsEvals(data.wsEvals ?? [])
       setUsers(Array.isArray(usersData) ? usersData : [])
+      setApprovals(Array.isArray(approvalsData) ? approvalsData : [])
     } catch (err) {
       console.error('Admin fetchAll error:', err)
     } finally {
@@ -170,8 +178,9 @@ export function AdminDashboardClient() {
 
   if (!ready) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}><div className="spinner" /></div>
 
-  const pendingConsults = consults.filter(c => c.status === 'pending').length
-  const newRegistrations = wsRegistrations.length
+  const pendingConsults   = consults.filter(c => c.status === 'pending').length
+  const newRegistrations  = wsRegistrations.length
+  const pendingApprovals  = approvals.filter(a => a.status === 'pending').length
 
   // ── Render ──
   return (
@@ -201,6 +210,11 @@ export function AdminDashboardClient() {
                   {newRegistrations}
                 </span>
               )}
+              {key === 'approvals' && pendingApprovals > 0 && (
+                <span style={{ marginRight: 'auto', background: '#f59e0b', color: 'white', fontSize: '0.68rem', borderRadius: 99, padding: '1px 6px', fontWeight: 700 }}>
+                  {pendingApprovals}
+                </span>
+              )}
             </button>
           ))}
         </nav>
@@ -216,6 +230,70 @@ export function AdminDashboardClient() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}><div className="spinner" /></div>
         ) : (
           <>
+            {/* ── APPROVALS ── */}
+            {tab === 'approvals' && (
+              <div>
+                <div style={styles.topRow}>
+                  <h2 style={styles.heading}>طلبات التسجيل المعلّقة ({approvals.filter(a => a.status === 'pending').length})</h2>
+                </div>
+
+                {approvals.length === 0 ? (
+                  <div style={{ ...styles.card, textAlign: 'center', padding: 56, color: '#94a3b8' }}>
+                    <div style={{ fontSize: '3rem', marginBottom: 12 }}>✅</div>
+                    لا توجد طلبات معلّقة
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {approvals.map(a => (
+                      <div key={a.id} style={{ ...styles.card, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                        {/* Avatar */}
+                        <div style={{ width: 44, height: 44, borderRadius: '50%', background: a.status === 'pending' ? '#fef3c7' : a.status === 'approved' ? '#dcfce7' : '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0 }}>
+                          {a.status === 'pending' ? '⏳' : a.status === 'approved' ? '✅' : '❌'}
+                        </div>
+                        {/* Info */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#0f172a' }}>{a.user_name ?? '—'}</div>
+                          <div style={{ fontSize: '0.8rem', color: '#64748b', direction: 'ltr' }}>{a.user_email}</div>
+                          <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 2 }}>{new Date(a.created_at).toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                        </div>
+                        {/* Status badge */}
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 10px', borderRadius: 99, background: a.status === 'pending' ? '#fef3c7' : a.status === 'approved' ? '#dcfce7' : '#fee2e2', color: a.status === 'pending' ? '#92400e' : a.status === 'approved' ? '#15803d' : '#dc2626' }}>
+                          {a.status === 'pending' ? 'معلّق' : a.status === 'approved' ? 'موافق عليه' : 'مرفوض'}
+                        </span>
+                        {/* Actions */}
+                        {a.status === 'pending' && (
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button
+                              style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontWeight: 700, fontSize: '0.84rem', fontFamily: 'inherit' }}
+                              disabled={approvingId === a.id}
+                              onClick={async () => {
+                                setApprovingId(a.id)
+                                await adminFetch('/api/admin/approvals', { method: 'PATCH', body: JSON.stringify({ id: a.id, userId: a.user_id, action: 'approve' }) })
+                                setApprovals(prev => prev.map(x => x.id === a.id ? { ...x, status: 'approved' } : x))
+                                setApprovingId(null)
+                              }}>
+                              {approvingId === a.id ? '...' : '✅ موافقة'}
+                            </button>
+                            <button
+                              style={styles.btnDanger}
+                              disabled={approvingId === a.id}
+                              onClick={async () => {
+                                setApprovingId(a.id)
+                                await adminFetch('/api/admin/approvals', { method: 'PATCH', body: JSON.stringify({ id: a.id, userId: a.user_id, action: 'reject' }) })
+                                setApprovals(prev => prev.map(x => x.id === a.id ? { ...x, status: 'rejected' } : x))
+                                setApprovingId(null)
+                              }}>
+                              {approvingId === a.id ? '...' : 'رفض'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* ── OVERVIEW ── */}
             {tab === 'overview' && (
               <div>

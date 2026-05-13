@@ -41,15 +41,18 @@ export function SignupClient() {
       return
     }
 
-    // No session = email confirmation required
-    if (!data.session) {
-      setSentEmail(email)
-      setSent(true)
-      setLoading(false)
-      return
-    }
+    if (!data.user) { setError('حدث خطأ غير متوقع'); setLoading(false); return }
 
-    window.location.href = '/user'
+    // Submit for admin approval (bans the user until approved)
+    await fetch('/api/auth/pending-approval', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: data.user.id, name, email }),
+    })
+
+    setSentEmail(email)
+    setSent(true)
+    setLoading(false)
   }
 
   if (sent) {
@@ -58,37 +61,29 @@ export function SignupClient() {
         <div style={{ width: '100%', maxWidth: 440, padding: '0 20px' }}>
           <div className="assessment-card" style={{ textAlign: 'center' }}>
 
-            <div style={{ fontSize: '4rem', marginBottom: 16 }}>📬</div>
+            <div style={{ fontSize: '4rem', marginBottom: 16 }}>⏳</div>
 
             <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', marginBottom: 10 }}>
-              تم تسجيل حسابك بنجاح!
+              طلبك قيد المراجعة
             </h1>
 
             <p style={{ fontSize: '0.95rem', color: '#475569', marginBottom: 8 }}>
-              أرسلنا رسالة تأكيد إلى:
+              تم استلام طلب تسجيل الحساب لـ:
             </p>
             <p style={{ fontWeight: 700, color: '#1e5fdc', fontSize: '1rem', marginBottom: 24, direction: 'ltr' }}>
               {sentEmail}
             </p>
 
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: '16px 20px', textAlign: 'right', marginBottom: 24 }}>
-              <p style={{ fontSize: '0.88rem', color: '#475569', marginBottom: 8, fontWeight: 600 }}>خطوات التفعيل:</p>
-              <ol style={{ fontSize: '0.85rem', color: '#64748b', paddingRight: 20, margin: 0, lineHeight: 2 }}>
-                <li>افتح بريدك الإلكتروني</li>
-                <li>ابحث عن رسالة من Career For Everyone</li>
-                <li>اضغط على رابط التأكيد</li>
-                <li>سجّل دخولك وابدأ رحلتك المهنية</li>
-              </ol>
-            </div>
-
-            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '12px 16px', marginBottom: 24, textAlign: 'right' }}>
-              <p style={{ fontSize: '0.83rem', color: '#92400e', margin: 0 }}>
-                💡 لم تجد الرسالة؟ تحقق من مجلد <strong>Spam</strong> أو <strong>Junk</strong>
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '16px 20px', textAlign: 'right', marginBottom: 24 }}>
+              <p style={{ fontSize: '0.88rem', color: '#166534', marginBottom: 0, lineHeight: 1.8 }}>
+                ✅ سيتم مراجعة طلبك من قِبل الإدارة<br />
+                ✅ ستتمكن من تسجيل الدخول بعد الموافقة<br />
+                ✅ تواصل مع الإدارة إن احتجت تسريع الطلب
               </p>
             </div>
 
             <Link href="/login" style={{ display: 'block', padding: '13px', background: '#1e5fdc', color: 'white', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: '0.95rem' }}>
-              الذهاب لتسجيل الدخول
+              العودة لتسجيل الدخول
             </Link>
 
           </div>
