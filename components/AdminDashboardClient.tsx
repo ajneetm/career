@@ -528,7 +528,7 @@ export function AdminDashboardClient() {
                           const next = ws
                           setSelectedWs(next)
                           setWsPanel('materials')
-                          if (next) fetch(`/api/admin/strange?workshop_id=${next.id}`).then(r => r.json()).then(setStrangeProfessions)
+                          fetch(`/api/admin/strange?workshop_id=${next.id}`).then(r => r.json()).then(d => { if (Array.isArray(d)) setStrangeProfessions(d) })
                         }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                           <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#0f172a', flex: 1, marginLeft: 8 }}>{ws.name_ar}</div>
@@ -860,12 +860,14 @@ function WorkshopDetail({
             ]).map(({ label, key, color }) => {
               const on = ws[key]
               return (
-                <div key={key} onClick={() => onToggle(key)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 12px', borderRadius: 10, background: on ? '#f0fdf4' : '#f8fafc', border: `1px solid ${on ? color + '30' : '#e2e8f0'}`, cursor: 'pointer', userSelect: 'none' }}>
+                <button key={key} type="button" onClick={() => onToggle(key)}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 12px', borderRadius: 10, background: on ? '#f0fdf4' : '#f8fafc', border: `1px solid ${on ? color + '30' : '#e2e8f0'}`, cursor: 'pointer', userSelect: 'none', fontFamily: 'inherit', width: '100%', textAlign: 'right' }}>
                   <span style={{ fontSize: '0.82rem', fontWeight: 600, color: on ? '#1e293b' : '#94a3b8' }}>{label}</span>
-                  <div style={{ width: 40, height: 22, borderRadius: 11, background: on ? color : '#cbd5e1', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+                  {/* track — dir:ltr so thumb always slides left→right regardless of page RTL */}
+                  <div dir="ltr" style={{ width: 40, height: 22, borderRadius: 11, background: on ? color : '#cbd5e1', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
                     <div style={{ width: 16, height: 16, borderRadius: '50%', background: 'white', position: 'absolute', top: 3, left: on ? 21 : 3, transition: 'left 0.18s', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
                   </div>
-                </div>
+                </button>
               )
             })}
           </div>

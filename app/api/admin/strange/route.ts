@@ -5,12 +5,12 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const workshop_id = searchParams.get('workshop_id')
 
-  const query = supabaseAdmin
+  let query = supabaseAdmin
     .from('strange_professions')
     .select('*, strange_profession_votes(id, avg_score, session_id, created_at)')
     .order('created_at')
 
-  if (workshop_id) query.eq('workshop_id', workshop_id)
+  if (workshop_id) query = query.eq('workshop_id', workshop_id)
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
