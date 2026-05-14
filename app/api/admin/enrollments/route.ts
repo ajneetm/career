@@ -3,7 +3,18 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 
 export async function POST(req: NextRequest) {
   const { workshop_id, user_email } = await req.json()
-  const { error } = await supabaseAdmin.from('workshop_enrollments').insert({ workshop_id, user_email })
+
+  // Resolve user_id by email so the enrollment is visible client-side
+  const { data: approval } = await supabaseAdmin
+    .from('user_approvals')
+    .select('user_id')
+    .eq('user_email', user_email)
+    .maybeSingle()
+  const user_id = approval?.user_id ?? null
+
+  const { error } = await supabaseAdmin
+    .from('workshop_enrollments')
+    .insert({ workshop_id, user_email, ...(user_id ? { user_id } : {}) })
   if (error && error.code !== '23505') return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })
 }

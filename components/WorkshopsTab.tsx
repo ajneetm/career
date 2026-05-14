@@ -26,7 +26,9 @@ type Material = {
   sort_order: number
 }
 
-type WsTab = 'materials' | 'assessments' | 'evaluation'
+type WsTab = 'materials' | 'assessments' | 'evaluation' | 'certificate'
+
+type EnrollmentInfo = { id: string; cert_url: string | null }
 
 const CONTENT_ICON: Record<string, string> = {
   file: '📄', video: '🎬', link: '🔗', quiz: '📝',
@@ -34,7 +36,7 @@ const CONTENT_ICON: Record<string, string> = {
 
 export function WorkshopsTab({ user }: { user: User }) {
   const [workshops, setWorkshops] = useState<Workshop[]>([])
-  const [enrolledIds, setEnrolledIds] = useState<Set<string>>(new Set())
+  const [enrolledIds, setEnrolledIds] = useState<Record<string, EnrollmentInfo>>({})
   const [loading, setLoading] = useState(true)
   const [enrolling, setEnrolling] = useState<string | null>(null)
 
@@ -49,28 +51,32 @@ export function WorkshopsTab({ user }: { user: User }) {
   useEffect(() => {
     Promise.all([
       supabase.from('workshops').select('*').eq('is_active', true).order('created_at'),
-      supabase.from('workshop_enrollments').select('workshop_id').eq('user_id', user.id),
+      supabase.from('workshop_enrollments').select('id, workshop_id, cert_url')
+        .or(`user_id.eq.${user.id},user_email.eq.${user.email}`),
     ]).then(([{ data: ws }, { data: en }]) => {
       const list = ws ?? []
-      const ids = new Set((en ?? []).map((e: { workshop_id: string }) => e.workshop_id))
+      const map: Record<string, EnrollmentInfo> = {}
+      ;(en ?? []).forEach((e: { id: string; workshop_id: string; cert_url: string | null }) => {
+        map[e.workshop_id] = { id: e.id, cert_url: e.cert_url }
+      })
       setWorkshops(list)
-      setEnrolledIds(ids)
+      setEnrolledIds(map)
       setLoading(false)
       // auto-open if only one enrollment
-      if (ids.size === 1) {
-        const auto = list.find(w => ids.has(w.id))
-        if (auto) openWorkshop(auto, ids)
+      if (Object.keys(map).length === 1) {
+        const auto = list.find(w => w.id in map)
+        if (auto) openWorkshop(auto, map)
       }
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id])
 
-  async function openWorkshop(ws: Workshop, ids?: Set<string>) {
+  async function openWorkshop(ws: Workshop, ids?: Record<string, EnrollmentInfo>) {
     setSelected(ws)
     setWsTab('materials')
     setMatLoading(true)
     const enrolled = ids ?? enrolledIds
-    if (!enrolled.has(ws.id)) { setMatLoading(false); return }
+    if (!(ws.id in enrolled)) { setMatLoading(false); return }
 
     const [{ data: mats }, { data: myEvalRow }] = await Promise.all([
       supabase.from('workshop_materials').select('*').eq('workshop_id', ws.id).order('sort_order'),
@@ -84,13 +90,13 @@ export function WorkshopsTab({ user }: { user: User }) {
 
   async function enroll(ws: Workshop) {
     setEnrolling(ws.id)
-    await fetch('/api/enroll', {
+    const res = await fetch('/api/enroll', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ workshop_id: ws.id, user_id: user.id, user_email: user.email }),
     })
-    const newIds = new Set(enrolledIds)
-    newIds.add(ws.id)
+    const data = await res.json()
+    const newIds = { ...enrolledIds, [ws.id]: { id: data.id ?? '', cert_url: null } }
     setEnrolledIds(newIds)
     setEnrolling(null)
     openWorkshop(ws, newIds)
@@ -100,11 +106,13 @@ export function WorkshopsTab({ user }: { user: User }) {
 
   // ── Workshop Detail ──
   if (selected) {
-    const isEnrolled = enrolledIds.has(selected.id)
+    const isEnrolled = selected.id in enrolledIds
+    const certInfo = enrolledIds[selected.id]
     const WS_TABS: { key: WsTab; label: string }[] = [
       { key: 'materials',   label: '📄 المواد' },
       { key: 'assessments', label: '📋 القبلي والبعدي' },
       { key: 'evaluation',  label: '⭐ التقييم' },
+      { key: 'certificate', label: '🏆 الشهادة' },
     ]
     return (
       <div>
@@ -179,6 +187,27 @@ export function WorkshopsTab({ user }: { user: User }) {
               <WorkshopAssessmentTab user={user} workshopId={selected.id} />
             )}
 
+            {/* Certificate */}
+            {wsTab === 'certificate' && (
+              <div className="assessment-card" style={{ textAlign: 'center', padding: 40 }}>
+                {certInfo?.cert_url ? (
+                  <>
+                    <div style={{ fontSize: '3rem', marginBottom: 12 }}>🏆</div>
+                    <p style={{ fontWeight: 700, color: '#16a34a', marginBottom: 20 }}>تهانينا! حصلت على شهادتك</p>
+                    <a href={certInfo.cert_url} target="_blank" rel="noopener noreferrer" className="btn-primary"
+                      style={{ textDecoration: 'none', display: 'inline-block' }}>
+                      عرض الشهادة ↗
+                    </a>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize: '3rem', marginBottom: 12 }}>📜</div>
+                    <p style={{ color: '#94a3b8', fontSize: '0.88rem' }}>لم تُرفق شهادة بعد</p>
+                  </>
+                )}
+              </div>
+            )}
+
             {/* Evaluation */}
             {wsTab === 'evaluation' && (
               <div className="assessment-card" style={{ textAlign: 'center', padding: 40 }}>
@@ -223,7 +252,7 @@ export function WorkshopsTab({ user }: { user: User }) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {workshops.map(ws => {
-            const enrolled = enrolledIds.has(ws.id)
+            const enrolled = ws.id in enrolledIds
             return (
               <div key={ws.id} className="assessment-card"
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
