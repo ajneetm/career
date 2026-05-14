@@ -4,13 +4,10 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 export async function POST(req: NextRequest) {
   const { workshop_id, user_email } = await req.json()
 
-  // Resolve user_id by email so the enrollment is visible client-side
-  const { data: approval } = await supabaseAdmin
-    .from('user_approvals')
-    .select('user_id')
-    .eq('user_email', user_email)
-    .maybeSingle()
-  const user_id = approval?.user_id ?? null
+  // Resolve user_id directly from auth so enrollment is visible regardless of signup method
+  const { data: { users } } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
+  const match = users.find(u => u.email?.toLowerCase() === user_email?.toLowerCase())
+  const user_id = match?.id ?? null
 
   const { error } = await supabaseAdmin
     .from('workshop_enrollments')

@@ -1002,7 +1002,7 @@ function WorkshopDetail({
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12, marginBottom: 24 }}>
               {wsEnrs.length === 0 && <p style={{ color: '#94a3b8', gridColumn: '1 / -1', textAlign: 'center', padding: '32px 0' }}>لا يوجد مسجّلون بعد</p>}
               {wsEnrs.map(e => {
-                const u = users.find(u => u.id === e.user_id)
+                const u = users.find(u => u.id === e.user_id) ?? users.find(u => u.email === e.user_email)
                 const userName = u?.user_metadata?.name ?? u?.user_metadata?.full_name ?? ''
                 const initial = (userName || e.user_email || '?')[0].toUpperCase()
                 return (
